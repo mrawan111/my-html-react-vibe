@@ -12,6 +12,7 @@ import Sales from "./pages/Sales";
 import DailyUsage from "./pages/DailyUsage";
 import Routers from "./pages/Routers";
 import Bills from "./pages/Bills";
+import ServerConnectionForm from "./pages/ServerConnectionForm";
 import { DashboardLayout } from "./components/DashboardLayout";
 import NotFound from "./pages/NotFound";
 
@@ -33,6 +34,7 @@ const App = () => (
           <Route path="/daily-usage" element={<DashboardLayout><DailyUsage /></DashboardLayout>} />
           <Route path="/routers" element={<DashboardLayout><Routers /></DashboardLayout>} />
           <Route path="/bills" element={<DashboardLayout><Bills /></DashboardLayout>} />
+          <Route path="/server-connection" element={<DashboardLayout><ServerConnectionForm /></DashboardLayout>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
