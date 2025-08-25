@@ -18,6 +18,9 @@ export default {
 			}
 		},
 		extend: {
+			fontFamily: {
+				'almarai': ['Almarai', 'sans-serif'],
+			},
 			colors: {
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
@@ -61,6 +64,15 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				// eTechValley Brand Colors
+				brand: {
+					orange: 'hsl(var(--brand-orange))',
+					'orange-hover': 'hsl(var(--brand-orange-hover))',
+					dark: 'hsl(var(--brand-dark))',
+					darker: 'hsl(var(--brand-darker))',
+					surface: 'hsl(var(--brand-surface))',
+					'surface-light': 'hsl(var(--brand-surface-light))',
 				}
 			},
 			borderRadius: {

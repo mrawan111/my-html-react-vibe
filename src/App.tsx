@@ -3,7 +3,16 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
+import Login from "./pages/Login";
+import Dashboard from "./pages/Dashboard";
+import Balance from "./pages/Balance";
+import Users from "./pages/Users";
+import Files from "./pages/Files";
+import Sales from "./pages/Sales";
+import DailyUsage from "./pages/DailyUsage";
+import Routers from "./pages/Routers";
+import Bills from "./pages/Bills";
+import { DashboardLayout } from "./components/DashboardLayout";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -15,8 +24,15 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route path="/" element={<Login />} />
+          <Route path="/dashboard" element={<DashboardLayout><Dashboard /></DashboardLayout>} />
+          <Route path="/balance" element={<DashboardLayout><Balance /></DashboardLayout>} />
+          <Route path="/users" element={<DashboardLayout><Users /></DashboardLayout>} />
+          <Route path="/files" element={<DashboardLayout><Files /></DashboardLayout>} />
+          <Route path="/sales" element={<DashboardLayout><Sales /></DashboardLayout>} />
+          <Route path="/daily-usage" element={<DashboardLayout><DailyUsage /></DashboardLayout>} />
+          <Route path="/routers" element={<DashboardLayout><Routers /></DashboardLayout>} />
+          <Route path="/bills" element={<DashboardLayout><Bills /></DashboardLayout>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
