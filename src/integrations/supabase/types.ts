@@ -14,7 +14,333 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      daily_stats: {
+        Row: {
+          active_users: number | null
+          created_at: string
+          date: string
+          id: string
+          router_id: string
+          total_data_used_gb: number | null
+          total_revenue: number | null
+          total_vouchers_sold: number | null
+        }
+        Insert: {
+          active_users?: number | null
+          created_at?: string
+          date: string
+          id?: string
+          router_id: string
+          total_data_used_gb?: number | null
+          total_revenue?: number | null
+          total_vouchers_sold?: number | null
+        }
+        Update: {
+          active_users?: number | null
+          created_at?: string
+          date?: string
+          id?: string
+          router_id?: string
+          total_data_used_gb?: number | null
+          total_revenue?: number | null
+          total_vouchers_sold?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_stats_router_id_fkey"
+            columns: ["router_id"]
+            isOneToOne: false
+            referencedRelation: "routers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          full_name: string | null
+          id: string
+          role: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          role?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          role?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      routers: {
+        Row: {
+          cloud_name: string
+          created_at: string
+          id: string
+          identifier: string
+          ip_address: unknown | null
+          last_contact: string | null
+          location: string | null
+          router_name: string
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          cloud_name: string
+          created_at?: string
+          id?: string
+          identifier: string
+          ip_address?: unknown | null
+          last_contact?: string | null
+          location?: string | null
+          router_name: string
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cloud_name?: string
+          created_at?: string
+          id?: string
+          identifier?: string
+          ip_address?: unknown | null
+          last_contact?: string | null
+          location?: string | null
+          router_name?: string
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      sales: {
+        Row: {
+          amount: number
+          id: string
+          notes: string | null
+          package_id: string
+          payment_method: string | null
+          quantity: number | null
+          router_id: string
+          sold_at: string
+          sold_by: string | null
+          voucher_id: string
+        }
+        Insert: {
+          amount: number
+          id?: string
+          notes?: string | null
+          package_id: string
+          payment_method?: string | null
+          quantity?: number | null
+          router_id: string
+          sold_at?: string
+          sold_by?: string | null
+          voucher_id: string
+        }
+        Update: {
+          amount?: number
+          id?: string
+          notes?: string | null
+          package_id?: string
+          payment_method?: string | null
+          quantity?: number | null
+          router_id?: string
+          sold_at?: string
+          sold_by?: string | null
+          voucher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "voucher_packages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_router_id_fkey"
+            columns: ["router_id"]
+            isOneToOne: false
+            referencedRelation: "routers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_voucher_id_fkey"
+            columns: ["voucher_id"]
+            isOneToOne: false
+            referencedRelation: "vouchers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      usage_logs: {
+        Row: {
+          created_at: string
+          data_used_mb: number | null
+          duration_minutes: number | null
+          id: string
+          router_id: string
+          session_end: string | null
+          session_start: string
+          user_ip: unknown | null
+          user_mac: string | null
+          voucher_id: string
+        }
+        Insert: {
+          created_at?: string
+          data_used_mb?: number | null
+          duration_minutes?: number | null
+          id?: string
+          router_id: string
+          session_end?: string | null
+          session_start?: string
+          user_ip?: unknown | null
+          user_mac?: string | null
+          voucher_id: string
+        }
+        Update: {
+          created_at?: string
+          data_used_mb?: number | null
+          duration_minutes?: number | null
+          id?: string
+          router_id?: string
+          session_end?: string | null
+          session_start?: string
+          user_ip?: unknown | null
+          user_mac?: string | null
+          voucher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "usage_logs_router_id_fkey"
+            columns: ["router_id"]
+            isOneToOne: false
+            referencedRelation: "routers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "usage_logs_voucher_id_fkey"
+            columns: ["voucher_id"]
+            isOneToOne: false
+            referencedRelation: "vouchers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      voucher_packages: {
+        Row: {
+          created_at: string
+          data_limit_gb: number | null
+          description: string | null
+          duration_days: number | null
+          duration_hours: number | null
+          duration_minutes: number | null
+          id: string
+          is_active: boolean | null
+          name: string
+          price: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data_limit_gb?: number | null
+          description?: string | null
+          duration_days?: number | null
+          duration_hours?: number | null
+          duration_minutes?: number | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          price: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data_limit_gb?: number | null
+          description?: string | null
+          duration_days?: number | null
+          duration_hours?: number | null
+          duration_minutes?: number | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          price?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      vouchers: {
+        Row: {
+          code: string
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          package_id: string
+          remaining_data_gb: number | null
+          remaining_time_minutes: number | null
+          router_id: string
+          status: string | null
+          updated_at: string
+          used_at: string | null
+          used_by: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          package_id: string
+          remaining_data_gb?: number | null
+          remaining_time_minutes?: number | null
+          router_id: string
+          status?: string | null
+          updated_at?: string
+          used_at?: string | null
+          used_by?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          package_id?: string
+          remaining_data_gb?: number | null
+          remaining_time_minutes?: number | null
+          router_id?: string
+          status?: string | null
+          updated_at?: string
+          used_at?: string | null
+          used_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vouchers_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "voucher_packages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vouchers_router_id_fkey"
+            columns: ["router_id"]
+            isOneToOne: false
+            referencedRelation: "routers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
