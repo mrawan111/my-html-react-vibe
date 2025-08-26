@@ -1,9 +1,41 @@
-import { Search, Bell } from "lucide-react";
+import { Search, Bell, LogOut, User } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { signOut } from "@/lib/auth";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
 export function AppNavbar() {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    const { error } = await signOut();
+    if (error) {
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء تسجيل الخروج",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "تم تسجيل الخروج بنجاح",
+        description: "شكراً لاستخدام النظام",
+      });
+      navigate("/");
+    }
+  };
   return (
     <nav className="flex items-center justify-between px-4 py-3 bg-card rounded-b-xl border-b border-border">
       <SidebarTrigger />
@@ -27,9 +59,36 @@ export function AppNavbar() {
           <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-destructive rounded-full"></span>
         </Button>
         
-        <div className="w-9 h-9 rounded-full border border-border bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
-          <span className="text-sm font-semibold text-primary">U</span>
-        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              className="w-9 h-9 rounded-full border border-border bg-gradient-to-br from-primary/20 to-primary/10 p-0"
+            >
+              <span className="text-sm font-semibold text-primary">
+                {user?.email?.charAt(0).toUpperCase() || "U"}
+              </span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="bg-card border-border">
+            <DropdownMenuLabel className="text-foreground">
+              {user?.email || "المستخدم"}
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator className="bg-border" />
+            <DropdownMenuItem className="text-foreground hover:bg-accent">
+              <User className="w-4 h-4 ml-2" />
+              الملف الشخصي
+            </DropdownMenuItem>
+            <DropdownMenuSeparator className="bg-border" />
+            <DropdownMenuItem 
+              className="text-foreground hover:bg-accent cursor-pointer"
+              onClick={handleSignOut}
+            >
+              <LogOut className="w-4 h-4 ml-2" />
+              تسجيل الخروج
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </nav>
   );
