@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { MikroTikAPI, MikroTikConnection } from "@/lib/mikrotik-api";
 
 export interface Router {
   id: string;
@@ -11,6 +12,12 @@ export interface Router {
   last_contact?: string;
   status: 'online' | 'offline' | 'maintenance';
   location?: string;
+  api_port?: number;
+  api_username?: string;
+  api_password?: string;
+  connection_type?: string;
+  hotspot_interface?: string;
+  hotspot_enabled?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -87,6 +94,56 @@ export const useUpdateRouter = () => {
       toast({
         title: "خطأ",
         description: "حدث خطأ أثناء تحديث الراوتر",
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+export const useTestRouterConnection = () => {
+  return useMutation({
+    mutationFn: async (router: Router) => {
+      if (!router.ip_address || !router.api_username || !router.api_password) {
+        throw new Error("بيانات الاتصال غير مكتملة");
+      }
+
+      const connection: MikroTikConnection = {
+        ip: router.ip_address,
+        port: router.api_port || 8728,
+        username: router.api_username,
+        password: router.api_password
+      };
+
+      const api = new MikroTikAPI(connection);
+      const isConnected = await api.testConnection();
+      
+      if (!isConnected) {
+        throw new Error("فشل في الاتصال بالراوتر");
+      }
+
+      // Update router status to online if connection successful
+      const { error } = await supabase
+        .from("routers")
+        .update({ 
+          status: 'online',
+          last_contact: new Date().toISOString()
+        })
+        .eq("id", router.id);
+
+      if (error) throw error;
+      
+      return { success: true };
+    },
+    onSuccess: () => {
+      toast({
+        title: "تم بنجاح",
+        description: "تم الاتصال بالراوتر بنجاح",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "خطأ في الاتصال",
+        description: error.message,
         variant: "destructive",
       });
     },

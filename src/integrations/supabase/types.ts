@@ -82,10 +82,54 @@ export type Database = {
         }
         Relationships: []
       }
+      router_credentials: {
+        Row: {
+          api_password: string
+          api_port: number
+          api_username: string
+          created_at: string
+          id: string
+          router_id: string
+          updated_at: string
+        }
+        Insert: {
+          api_password: string
+          api_port?: number
+          api_username: string
+          created_at?: string
+          id?: string
+          router_id: string
+          updated_at?: string
+        }
+        Update: {
+          api_password?: string
+          api_port?: number
+          api_username?: string
+          created_at?: string
+          id?: string
+          router_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "router_credentials_router_id_fkey"
+            columns: ["router_id"]
+            isOneToOne: false
+            referencedRelation: "routers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       routers: {
         Row: {
+          api_password: string | null
+          api_port: number | null
+          api_username: string | null
           cloud_name: string
+          connection_type: string | null
           created_at: string
+          hotspot_enabled: boolean | null
+          hotspot_interface: string | null
           id: string
           identifier: string
           ip_address: unknown | null
@@ -96,8 +140,14 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          api_password?: string | null
+          api_port?: number | null
+          api_username?: string | null
           cloud_name: string
+          connection_type?: string | null
           created_at?: string
+          hotspot_enabled?: boolean | null
+          hotspot_interface?: string | null
           id?: string
           identifier: string
           ip_address?: unknown | null
@@ -108,8 +158,14 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          api_password?: string | null
+          api_port?: number | null
+          api_username?: string | null
           cloud_name?: string
+          connection_type?: string | null
           created_at?: string
+          hotspot_enabled?: boolean | null
+          hotspot_interface?: string | null
           id?: string
           identifier?: string
           ip_address?: unknown | null

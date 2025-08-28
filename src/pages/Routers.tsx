@@ -3,13 +3,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useRouters } from "@/hooks/useRouters";
+import { useRouters, useTestRouterConnection } from "@/hooks/useRouters";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
+import { Wifi, WifiOff, Settings } from "lucide-react";
 
 export default function Routers() {
   const [searchTerm, setSearchTerm] = useState("");
   const { data: routers = [], isLoading, error } = useRouters();
+  const testConnection = useTestRouterConnection();
 
   const filteredRouters = routers.filter(router =>
     router.cloud_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -70,15 +72,16 @@ export default function Routers() {
                 <th className="py-3 px-2">إسم الراوتر</th>
                 <th className="py-3 px-2">الإسم التعريفي</th>
                 <th className="py-3 px-2">الحالة</th>
-                <th className="py-3 px-2">اخر الاتصال</th>
+                <th className="py-3 px-2">نوع الاتصال</th>
+                <th className="py-3 px-2">الموقع</th>
                 <th className="py-3 px-2">العنوان الالكترونى</th>
-                <th className="py-3 px-2">تعديل</th>
+                <th className="py-3 px-2">الإجراءات</th>
               </tr>
             </thead>
             <tbody>
               {filteredRouters.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-8 text-muted-foreground">
+                  <td colSpan={8} className="text-center py-8 text-muted-foreground">
                     لا توجد راوترات
                   </td>
                 </tr>
@@ -97,14 +100,29 @@ export default function Routers() {
                       </Badge>
                     </td>
                     <td className="py-4 px-2">
-                      {router.last_contact 
-                        ? format(new Date(router.last_contact), "PPp", { locale: ar })
-                        : "لا يوجد"
-                      }
+                      <Badge variant="outline">
+                        {router.connection_type || 'mikrotik-api'}
+                      </Badge>
                     </td>
+                    <td className="py-4 px-2">{router.location || "لا يوجد"}</td>
                     <td className="py-4 px-2">{router.ip_address || "لا يوجد"}</td>
                     <td className="py-4 px-2">
-                      <Button variant="outline" size="sm" className="text-primary">تعديل</Button>
+                      <div className="flex gap-2 justify-center">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => testConnection.mutate(router)}
+                          disabled={testConnection.isPending}
+                          className="flex items-center gap-1"
+                        >
+                          {router.status === 'online' ? <Wifi size={14} /> : <WifiOff size={14} />}
+                          اختبار الاتصال
+                        </Button>
+                        <Button variant="outline" size="sm" className="flex items-center gap-1">
+                          <Settings size={14} />
+                          تعديل
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))
