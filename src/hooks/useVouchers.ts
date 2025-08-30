@@ -84,6 +84,8 @@ export const useCreateVouchers = () => {
       quantity?: number;
       autoGenerate?: boolean;
     }) => {
+      console.log("Creating vouchers with params:", { packageId, routerId, quantity });
+      
       // Get package details
       const { data: packageData, error: packageError } = await supabase
         .from("voucher_packages")
@@ -91,7 +93,11 @@ export const useCreateVouchers = () => {
         .eq("id", packageId)
         .single();
 
-      if (packageError) throw packageError;
+      console.log("Package data:", packageData);
+      if (packageError) {
+        console.error("Package error:", packageError);
+        throw packageError;
+      }
 
       const vouchers = [];
       
@@ -142,9 +148,10 @@ export const useCreateVouchers = () => {
       });
     },
     onError: (error) => {
+      console.error("Error creating vouchers:", error);
       toast({
         title: "خطأ",
-        description: "حدث خطأ أثناء إنشاء القسائم",
+        description: error.message || "حدث خطأ أثناء إنشاء القسائم",
         variant: "destructive",
       });
     },
