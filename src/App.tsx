@@ -13,6 +13,7 @@ import DailyUsage from "./pages/DailyUsage";
 import Routers from "./pages/Routers";
 import Bills from "./pages/Bills";
 import ServerConnectionForm from "./pages/ServerConnectionForm";
+import VoucherCards from "./pages/VoucherCards";
 import { DashboardLayout } from "./components/DashboardLayout";
 import NotFound from "./pages/NotFound";
 import { useAuth } from "./hooks/useAuth";
@@ -88,6 +89,11 @@ const App = () => (
           <Route path="/server-connection" element={
             <ProtectedRoute>
               <DashboardLayout><ServerConnectionForm /></DashboardLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/cards" element={
+            <ProtectedRoute>
+              <DashboardLayout><VoucherCards /></DashboardLayout>
             </ProtectedRoute>
           } />
           <Route path="*" element={<NotFound />} />
