@@ -78,16 +78,22 @@ export function AppSidebar() {
 
   return (
     <Sidebar className={`${collapsed ? "w-16" : "w-64"} border-l border-border bg-sidebar transition-all duration-300`}>
-      <SidebarHeader className="border-b border-border p-4">
+      <SidebarHeader className="border-b border-border p-4 bg-gradient-to-b from-secondary to-secondary/80">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2 rtl:space-x-reverse">
             {!collapsed && (
               <>
-                <Wifi className="h-6 w-6 text-primary" />
-                <span className="text-lg font-bold text-foreground">eTechValley</span>
+                <div className="flex items-center justify-center w-12 h-12 bg-primary rounded-full transform hover:rotate-15 transition-transform duration-300">
+                  <Wifi className="h-6 w-6 text-primary-foreground" />
+                </div>
+                <span className="text-lg font-bold text-foreground">KayanTeck</span>
               </>
             )}
-            {collapsed && <Wifi className="h-6 w-6 text-primary mx-auto" />}
+            {collapsed && (
+              <div className="flex items-center justify-center w-10 h-10 bg-primary rounded-full mx-auto">
+                <Wifi className="h-5 w-5 text-primary-foreground" />
+              </div>
+            )}
           </div>
         </div>
       </SidebarHeader>

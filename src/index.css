@@ -8,67 +8,81 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* eTechValley Dark Theme - Base Colors */
-    --background: 221 8% 7%;           /* #121217 */
-    --foreground: 220 8% 69%;          /* #b0b0b0 */
+    /* KayanTeck Dark Theme - Base Colors */
+    --background: 0 0% 4%;             /* #0a0a0a */
+    --foreground: 0 0% 96%;            /* #f5f5f5 */
 
-    --card: 221 12% 11%;               /* #1a1820 */
-    --card-foreground: 220 8% 95%;
+    --card: 0 0% 18%;                  /* #2d2d2d */
+    --card-foreground: 0 0% 96%;
 
-    --popover: 221 12% 11%;
-    --popover-foreground: 220 8% 95%;
+    --popover: 0 0% 18%;
+    --popover-foreground: 0 0% 96%;
 
-    --primary: 34 95% 52%;             /* #f7941d - Brand Orange */
+    --primary: 26 100% 50%;            /* #ff7700 - Brand Orange */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 221 12% 16%;          /* #2a2830 */
-    --secondary-foreground: 220 8% 95%;
+    --secondary: 0 0% 10%;             /* #1a1a1a */
+    --secondary-foreground: 0 0% 96%;
 
-    --muted: 221 12% 16%;
-    --muted-foreground: 220 8% 50%;
+    --muted: 0 0% 10%;
+    --muted-foreground: 0 0% 64%;      /* #a3a3a3 */
 
-    --accent: 221 15% 12%;             /* #1c1c1f */
-    --accent-foreground: 220 8% 95%;
+    --accent: 0 0% 27%;                /* #444444 */
+    --accent-foreground: 0 0% 96%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 351 89% 60%;        /* #ff3366 */
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 221 12% 20%;
-    --input: 221 12% 16%;
-    --ring: 34 95% 52%;
+    --border: 0 0% 27%;                /* #444444 */
+    --input: 0 0% 18%;
+    --ring: 26 100% 50%;
 
-    --radius: 0.75rem;
+    --radius: 0.5rem;
 
     /* Sidebar Colors */
-    --sidebar-background: 221 15% 12%;
-    --sidebar-foreground: 220 8% 69%;
-    --sidebar-primary: 34 95% 52%;
+    --sidebar-background: 0 0% 10%;    /* #1a1a1a */
+    --sidebar-foreground: 0 0% 96%;
+    --sidebar-primary: 26 100% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 221 12% 16%;
-    --sidebar-accent-foreground: 220 8% 95%;
-    --sidebar-border: 221 12% 20%;
-    --sidebar-ring: 34 95% 52%;
+    --sidebar-accent: 0 0% 18%;
+    --sidebar-accent-foreground: 0 0% 96%;
+    --sidebar-border: 0 0% 27%;
+    --sidebar-ring: 26 100% 50%;
 
-    /* eTechValley Brand Colors */
-    --brand-orange: 34 95% 52%;        /* #f7941d */
-    --brand-orange-hover: 34 95% 45%;  /* #e9830f */
-    --brand-dark: 221 8% 7%;           /* #121217 */
-    --brand-darker: 221 15% 5%;        /* #0c0b0e */
-    --brand-surface: 221 12% 11%;      /* #1a1820 */
-    --brand-surface-light: 221 12% 16%; /* #2a2830 */
+    /* KayanTeck Brand Colors */
+    --brand-orange: 26 100% 50%;       /* #ff7700 */
+    --brand-orange-hover: 26 100% 40%; /* #cc5500 */
+    --brand-red: 351 89% 60%;          /* #ff3366 */
+    --brand-blue: 207 90% 54%;         /* #2196F3 */
+    --brand-green: 122 39% 49%;        /* #4CAF50 */
+    --brand-dark: 0 0% 4%;             /* #0a0a0a */
+    --brand-darker: 0 0% 6%;           /* #0f0f0f */
+    --brand-surface: 0 0% 18%;         /* #2d2d2d */
+    --brand-surface-light: 0 0% 21%;   /* #353535 */
+
+    /* Success, Warning, Info colors */
+    --success: 122 39% 49%;            /* #4CAF50 */
+    --success-foreground: 0 0% 100%;
+    --warning: 26 100% 50%;            /* #ff7700 */
+    --warning-foreground: 0 0% 100%;
+    --info: 207 90% 54%;               /* #2196F3 */
+    --info-foreground: 0 0% 100%;
 
     /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(var(--brand-orange)), hsl(var(--primary)));
+    --gradient-primary: linear-gradient(135deg, hsl(var(--brand-orange)), hsl(var(--brand-orange-hover)));
     --gradient-surface: linear-gradient(145deg, hsl(var(--brand-surface)), hsl(var(--brand-surface-light)));
     --gradient-hero: linear-gradient(135deg, hsl(var(--brand-dark)), hsl(var(--brand-darker)));
+    --gradient-card: linear-gradient(135deg, hsl(var(--brand-surface)), hsl(var(--brand-surface-light)));
     
     /* Shadows */
     --shadow-glow: 0 0 30px hsl(var(--brand-orange) / 0.3);
     --shadow-elegant: 0 10px 30px -10px hsl(var(--brand-orange) / 0.2);
     --shadow-soft: 0 4px 20px hsl(0 0% 0% / 0.15);
+    --shadow-card: 0 4px 6px hsl(0 0% 0% / 0.2);
 
     /* Transitions */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-fast: all 0.2s ease-out;
   }
 
   .dark {
@@ -99,11 +113,41 @@ All colors MUST be HSL.
   }
   
   ::-webkit-scrollbar-thumb {
-    background: hsl(var(--brand-orange) / 0.3);
+    background: hsl(var(--primary) / 0.4);
     border-radius: 4px;
   }
   
   ::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--brand-orange) / 0.5);
+    background: hsl(var(--primary) / 0.6);
+  }
+
+  /* KayanTeck specific styling */
+  .kayantech-header {
+    background: var(--gradient-surface);
+    box-shadow: 0 2px 10px hsl(0 0% 0% / 0.5);
+  }
+
+  .kayantech-card {
+    background: var(--gradient-card);
+    box-shadow: var(--shadow-card);
+    transition: var(--transition-smooth);
+  }
+
+  .kayantech-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px hsl(0 0% 0% / 0.3);
+  }
+
+  .status-badge {
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.25rem 0.75rem;
+  }
+
+  .chart-container {
+    position: relative;
+    width: 100%;
+    height: 300px;
   }
 }

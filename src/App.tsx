@@ -14,6 +14,8 @@ import Routers from "./pages/Routers";
 import Bills from "./pages/Bills";
 import ServerConnectionForm from "./pages/ServerConnectionForm";
 import VoucherCards from "./pages/VoucherCards";
+import CardData from "./pages/CardData";
+import Guide from "./pages/Guide";
 import { DashboardLayout } from "./components/DashboardLayout";
 import NotFound from "./pages/NotFound";
 import { useAuth } from "./hooks/useAuth";
@@ -94,6 +96,16 @@ const App = () => (
           <Route path="/cards" element={
             <ProtectedRoute>
               <DashboardLayout><VoucherCards /></DashboardLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/card-data" element={
+            <ProtectedRoute>
+              <DashboardLayout><CardData /></DashboardLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/help" element={
+            <ProtectedRoute>
+              <DashboardLayout><Guide /></DashboardLayout>
             </ProtectedRoute>
           } />
           <Route path="*" element={<NotFound />} />
