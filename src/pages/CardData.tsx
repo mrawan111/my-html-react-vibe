@@ -27,18 +27,6 @@ import { supabase } from "@/integrations/supabase/client";
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
-const chartData = [
-  { name: "يومي", value: 45, color: "#ff7700" },
-  { name: "أسبوعي", value: 30, color: "#2196F3" },
-  { name: "شهري", value: 25, color: "#4CAF50" }
-];
-
-const salesStats = [
-  { month: "يناير", daily: 45, weekly: 30, monthly: 25 },
-  { month: "فبراير", daily: 52, weekly: 35, monthly: 28 },
-  { month: "مارس", daily: 48, weekly: 32, monthly: 30 },
-  { month: "أبريل", daily: 55, weekly: 38, monthly: 32 }
-];
 
 export default function CardData() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -48,8 +36,40 @@ export default function CardData() {
   const printRef = useRef<HTMLDivElement>(null);
 
   const { data: routers = [] } = useRouters();
-  const { data: vouchers = [] } = useVouchers(selectedRouter);
+  const { data: vouchers = [], refetch: refetchVouchers } = useVouchers(selectedRouter);
   const { data: packages = [] } = useVoucherPackages();
+
+  // Calculate real chart data from vouchers
+  const getVoucherStats = () => {
+    const statusCounts = vouchers.reduce((acc, voucher) => {
+      acc[voucher.status] = (acc[voucher.status] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    return [
+      { name: "نشط", value: statusCounts.active || 0, color: "#4CAF50" },
+      { name: "غير مستخدم", value: statusCounts.unused || 0, color: "#ff7700" },
+      { name: "مستخدم", value: statusCounts.used || 0, color: "#2196F3" },
+      { name: "منتهي", value: statusCounts.expired || 0, color: "#f44336" }
+    ];
+  };
+
+  // Calculate package distribution
+  const getPackageStats = () => {
+    const packageCounts = vouchers.reduce((acc, voucher) => {
+      const pkg = packages.find(p => p.id === voucher.package_id);
+      if (pkg) {
+        acc[pkg.name] = (acc[pkg.name] || 0) + 1;
+      }
+      return acc;
+    }, {} as Record<string, number>);
+
+    return Object.entries(packageCounts).map(([name, count], index) => ({
+      month: name,
+      vouchers: count,
+      color: ["#ff7700", "#2196F3", "#4CAF50", "#f44336"][index % 4]
+    }));
+  };
 
   const getStatusBadge = (status: string) => {
     const variants = {
@@ -94,7 +114,7 @@ export default function CardData() {
       });
       
       // Refresh the vouchers list
-      window.location.reload();
+      refetchVouchers();
     } catch (error) {
       toast({
         title: "خطأ",
@@ -271,7 +291,7 @@ export default function CardData() {
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
-                      data={chartData}
+                      data={getVoucherStats()}
                       cx="50%"
                       cy="50%"
                       outerRadius={80}
@@ -279,7 +299,7 @@ export default function CardData() {
                       labelLine={false}
                       label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                     >
-                      {chartData.map((entry, index) => (
+                      {getVoucherStats().map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
@@ -301,13 +321,13 @@ export default function CardData() {
             <CardHeader>
               <CardTitle className="text-foreground flex items-center">
                 <BarChart3 className="h-5 w-5 mr-2 text-primary" />
-                إحصائيات المبيعات الشهرية
+                توزيع الحزم
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="chart-container">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={salesStats}>
+                  <BarChart data={getPackageStats()}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis 
                       dataKey="month" 
@@ -326,9 +346,7 @@ export default function CardData() {
                         color: "hsl(var(--foreground))"
                       }}
                     />
-                    <Bar dataKey="daily" fill="#ff7700" name="يومي" />
-                    <Bar dataKey="weekly" fill="#2196F3" name="أسبوعي" />
-                    <Bar dataKey="monthly" fill="#4CAF50" name="شهري" />
+                    <Bar dataKey="vouchers" fill="#ff7700" name="عدد الكروت" />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -378,7 +396,10 @@ export default function CardData() {
                         <TableCell>{new Date(voucher.created_at).toLocaleDateString('ar-EG')}</TableCell>
                         <TableCell>{voucher.expires_at ? new Date(voucher.expires_at).toLocaleDateString('ar-EG') : '-'}</TableCell>
                         <TableCell>{getStatusBadge(voucher.status)}</TableCell>
-                        <TableCell className="font-semibold">30 GB</TableCell>
+                        <TableCell className="font-semibold">
+                          {voucher.remaining_data_gb ? `${voucher.remaining_data_gb} GB` : 
+                           voucherPackage?.data_limit_gb ? `${voucherPackage.data_limit_gb} GB` : '30 GB'}
+                        </TableCell>
                         <TableCell>
                           <div className="flex gap-2">
                             <Button variant="outline" size="sm" className="hover:bg-primary/10">
@@ -452,7 +473,10 @@ export default function CardData() {
                         <p className="text-xl font-mono font-bold text-black">{voucher.code}</p>
                       </div>
                       <div className="text-sm text-gray-600 space-y-1">
-                        <p>الحجم: <span className="font-semibold text-black">30 GB</span></p>
+                        <p>الحجم: <span className="font-semibold text-black">
+                          {voucher.remaining_data_gb ? `${voucher.remaining_data_gb} GB` : 
+                           voucherPackage?.data_limit_gb ? `${voucherPackage.data_limit_gb} GB` : '30 GB'}
+                        </span></p>
                         <p>النوع: <span className="font-semibold text-black">{voucherPackage?.name || 'باقة أساسية'}</span></p>
                         {voucher.expires_at && (
                           <p>تنتهي: <span className="font-semibold text-black">{new Date(voucher.expires_at).toLocaleDateString('ar-EG')}</span></p>
