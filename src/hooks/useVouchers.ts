@@ -22,7 +22,7 @@ export interface Voucher {
   code: string;
   package_id: string;
   router_id: string;
-  status: 'unused' | 'active' | 'expired' | 'used';
+  status: 'unused' | 'active' | 'expired' | 'suspended';
   used_by?: string;
   used_at?: string;
   expires_at?: string;
@@ -198,7 +198,7 @@ export const useActivateVoucher = () => {
         };
 
         const api = new MikroTikAPI(connection);
-        
+
         // Create hotspot user
         const hotspotUser: HotspotUser = {
           name: voucher.code,
@@ -237,6 +237,163 @@ export const useActivateVoucher = () => {
       toast({
         title: "خطأ",
         description: "حدث خطأ أثناء تفعيل القسيمة",
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+export const useSellVoucher = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      voucherId,
+      paymentMethod,
+      notes
+    }: {
+      voucherId: string;
+      paymentMethod: string;
+      notes?: string;
+    }) => {
+      // Get voucher details including package and router
+      const { data: voucher, error: voucherError } = await supabase
+        .from("vouchers")
+        .select("*, voucher_packages(*), routers(*)")
+        .eq("id", voucherId)
+        .single();
+
+      if (voucherError) throw voucherError;
+
+      // Insert sale record
+      const { data: saleData, error: saleError } = await supabase
+        .from("sales")
+        .insert({
+          voucher_id: voucherId,
+          package_id: voucher.package_id,
+          router_id: voucher.router_id,
+          amount: voucher.voucher_packages.price,
+          payment_method: paymentMethod,
+          notes: notes || null,
+          quantity: 1,
+          sold_at: new Date().toISOString(),
+          sold_by: null // Will be set by RLS policy based on authenticated user
+        })
+        .select()
+        .single();
+
+      if (saleError) throw saleError;
+
+      // Update voucher status to 'suspended' (sold)
+      const { data: updateData, error: updateError } = await supabase
+        .from("vouchers")
+        .update({
+          status: 'suspended',
+          used_at: new Date().toISOString()
+        })
+        .eq("id", voucherId)
+        .select()
+        .single();
+
+      if (updateError) throw updateError;
+
+      return { sale: saleData, voucher: updateData };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["vouchers"] });
+      queryClient.invalidateQueries({ queryKey: ["sales"] });
+      toast({
+        title: "تم بنجاح",
+        description: `تم بيع القسيمة بمبلغ ${data.sale.amount} جنيه`,
+      });
+    },
+    onError: (error: Error) => {
+      console.error("Error selling voucher:", error);
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء بيع القسيمة",
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+export const useDeleteVoucher = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (voucherId: string) => {
+      const { error } = await supabase
+        .from("vouchers")
+        .delete()
+        .eq("id", voucherId);
+
+      if (error) throw error;
+      return voucherId;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["vouchers"] });
+      toast({
+        title: "تم بنجاح",
+        description: "تم حذف القسيمة بنجاح",
+      });
+    },
+    onError: (error: Error) => {
+      console.error("Error deleting voucher:", error);
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء حذف القسيمة",
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+export const useUpdateVoucherStatus = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      voucherId,
+      status
+    }: {
+      voucherId: string;
+      status: 'unused' | 'used' | 'suspended';
+    }) => {
+      const updateData: any = {
+        status,
+        updated_at: new Date().toISOString()
+      };
+
+      if (status === 'used' || status === 'suspended') {
+        updateData.used_at = new Date().toISOString();
+      } else if (status === 'unused') {
+        updateData.used_at = null;
+        updateData.used_by = null;
+      }
+
+      const { data, error } = await supabase
+        .from("vouchers")
+        .update(updateData)
+        .eq("id", voucherId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["vouchers"] });
+      toast({
+        title: "تم بنجاح",
+        description: "تم تحديث حالة القسيمة بنجاح",
+      });
+    },
+    onError: (error: Error) => {
+      console.error("Error updating voucher status:", error);
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء تحديث حالة القسيمة",
         variant: "destructive",
       });
     },
