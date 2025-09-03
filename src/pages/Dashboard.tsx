@@ -18,6 +18,9 @@ import {
   AreaChart
 } from "recharts";
 import { TrendingUp, TrendingDown, Users, Wifi, DollarSign, Activity, AlertTriangle, CheckCircle } from "lucide-react";
+import { useVouchers } from "@/hooks/useVouchers";
+import { useRouters } from "@/hooks/useRouters";
+import { useMemo } from "react";
 
 const weeklyUsageData = [
   { name: "السبت", value: 45, sales: 12 },
@@ -69,6 +72,29 @@ const activeUsersData = [
 ];
 
 export default function Dashboard() {
+  const { data: routers = [] } = useRouters();
+  const { data: vouchers = [] } = useVouchers();
+
+  const dashboardStats = useMemo(() => {
+    const activeVouchers = vouchers.filter(v => v.status === 'active').length;
+    const totalRevenue = vouchers.filter(v => v.status !== 'unused').length * 30; // Assuming avg 30 per voucher
+    const todayVouchers = vouchers.filter(v => {
+      const today = new Date().toDateString();
+      return new Date(v.created_at).toDateString() === today;
+    }).length;
+    const monthlyVouchers = vouchers.filter(v => {
+      const thisMonth = new Date().getMonth();
+      return new Date(v.created_at).getMonth() === thisMonth;
+    }).length;
+
+    return {
+      balance: totalRevenue,
+      todaySales: todayVouchers,
+      activeUsers: activeVouchers,
+      monthlySales: monthlyVouchers
+    };
+  }, [vouchers]);
+
   return (
     <div className="flex-1 px-6 pt-6 space-y-6 overflow-auto bg-background min-h-screen">
       <div className="flex items-center justify-between">
@@ -83,7 +109,7 @@ export default function Dashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-muted-foreground text-sm mb-1">الرصيد المتاح</div>
-                <div className="text-foreground text-3xl font-semibold">15,430</div>
+                <div className="text-foreground text-3xl font-semibold">{dashboardStats.balance.toLocaleString()}</div>
                 <div className="text-success text-xs mt-1 flex items-center">
                   <TrendingUp className="h-3 w-3 mr-1" />
                   +12.5% من الأمس
@@ -101,7 +127,7 @@ export default function Dashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-muted-foreground text-sm mb-1">إجمالي مبيعات اليوم</div>
-                <div className="text-foreground text-3xl font-semibold">47</div>
+                <div className="text-foreground text-3xl font-semibold">{dashboardStats.todaySales}</div>
                 <div className="text-muted-foreground text-xs mt-1">كارت واي فاي</div>
               </div>
               <div className="p-3 bg-success/20 rounded-full">
@@ -116,7 +142,7 @@ export default function Dashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-muted-foreground text-sm mb-1">المستخدمون النشطون</div>
-                <div className="text-foreground text-3xl font-semibold">89</div>
+                <div className="text-foreground text-3xl font-semibold">{dashboardStats.activeUsers}</div>
                 <div className="text-info text-xs mt-1 flex items-center">
                   <Activity className="h-3 w-3 mr-1" />
                   متصل الآن
@@ -134,7 +160,7 @@ export default function Dashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-muted-foreground text-sm mb-1">إجمالي مبيعات الشهر</div>
-                <div className="text-foreground text-3xl font-semibold">1,847</div>
+                <div className="text-foreground text-3xl font-semibold">{dashboardStats.monthlySales}</div>
                 <div className="text-warning text-xs mt-1 flex items-center">
                   <TrendingDown className="h-3 w-3 mr-1" />
                   -3.2% من الشهر الماضي

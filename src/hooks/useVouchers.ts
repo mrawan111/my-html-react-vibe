@@ -243,9 +243,9 @@ export const useActivateVoucher = () => {
   });
 };
 
-// Helper function to generate voucher codes
+// Helper function to generate voucher codes (numbers only)
 function generateVoucherCode(): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  const chars = '0123456789';
   let result = '';
   for (let i = 0; i < 8; i++) {
     result += chars.charAt(Math.floor(Math.random() * chars.length));
