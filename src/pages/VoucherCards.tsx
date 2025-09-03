@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useVouchers, useVoucherPackages, useCreateVouchers, useActivateVoucher, useSellVoucher, useDeleteVoucher, useUpdateVoucherStatus } from "@/hooks/useVouchers";
 import { useRouters } from "@/hooks/useRouters";
+import { useFiles } from "@/hooks/useFiles";
 import { toast } from "@/hooks/use-toast";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
@@ -33,6 +34,7 @@ export default function VoucherCards() {
   const { data: routers } = useRouters();
   const { data: packages } = useVoucherPackages();
   const { data: vouchers, refetch: refetchVouchers } = useVouchers(selectedRouter || undefined);
+  const { addFile } = useFiles();
   const createVouchersMutation = useCreateVouchers();
   const activateVoucherMutation = useActivateVoucher();
   const sellVoucherMutation = useSellVoucher();
@@ -61,28 +63,75 @@ export default function VoucherCards() {
     );
   };
 
-  const handleGenerateVouchers = async () => {
-    if (!selectedRouter || !selectedPackage) {
-      toast({
-        title: "خطأ",
-        description: "يرجى اختيار الراوتر والباقة",
-        variant: "destructive"
-      });
-      return;
+  
+const handleGenerateVouchers = async () => {
+  if (!selectedRouter || !selectedPackage) {
+    toast({
+      title: "خطأ",
+      description: "يرجى اختيار الراوتر والباقة",
+      variant: "destructive"
+    });
+    return;
+  }
+
+  try {
+    // Create the vouchers and get the returned data directly
+    const newVouchersData = await createVouchersMutation.mutateAsync({
+      packageId: selectedPackage,
+      routerId: selectedRouter,
+      quantity: voucherQuantity
+    });
+
+    console.log("New vouchers created:", newVouchersData);
+
+    if (newVouchersData && newVouchersData.length > 0) {
+      // Select the new vouchers for printing using the returned data
+      const newVoucherIds = new Set(newVouchersData.map(v => v.id));
+      setSelectedVouchersForPrint(newVoucherIds);
+
+      // Export immediately with the voucher data
+      console.log("Starting PDF export for", newVouchersData.length, "vouchers");
+      const pdfBlob = await exportSelectedVouchersToPDF(newVouchersData);
+
+      if (pdfBlob) {
+        console.log("PDF created successfully, saving to files");
+        const selectedRouterData = routers?.find(r => r.id === selectedRouter);
+        const fileName = `vouchers_${selectedRouterData?.router_name || 'router'}_${new Date().toISOString().split('T')[0]}_${newVouchersData.length}`;
+
+        addFile({
+          routerNumber: selectedRouterData?.router_name || selectedRouter,
+          quantity: newVouchersData.length,
+          remaining: newVouchersData.length,
+          fileName,
+          caption: "قسائم مولدة تلقائياً",
+          expiry: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          pdfBlob
+        });
+
+        toast({
+          title: "تم التصدير التلقائي",
+          description: `تم تصدير ${newVouchersData.length} قسيمة جديدة وحفظها في الملفات`
+        });
+
+        // Clear selection after export
+        setSelectedVouchersForPrint(new Set());
+      } else {
+        console.error("PDF export failed");
+      }
+    } else {
+      console.log("No new vouchers data returned");
     }
 
-    try {
-      await createVouchersMutation.mutateAsync({
-        packageId: selectedPackage,
-        routerId: selectedRouter,
-        quantity: voucherQuantity
-      });
-      setIsGenerateDialogOpen(false);
-      refetchVouchers();
-    } catch (error) {
-      console.error("Error generating vouchers:", error);
-    }
-  };
+    setIsGenerateDialogOpen(false);
+  } catch (error) {
+    console.error("Error generating vouchers:", error);
+    toast({
+      title: "خطأ",
+      description: "فشل في توليد القسائم",
+      variant: "destructive"
+    });
+  }
+};
 
   const handleActivateVoucher = async (voucherId: string, userMac: string) => {
     if (!selectedRouter) {
@@ -196,8 +245,6 @@ export default function VoucherCards() {
     }
   };
 
-
-
   const removeSelectedVoucher = (voucherId: string) => {
     setSelectedVouchersForPrint(prev => {
       const newSet = new Set(prev);
@@ -205,24 +252,55 @@ export default function VoucherCards() {
       return newSet;
     });
   };
-const exportSelectedVouchersToPDF = async () => {
-  if (selectedVouchersForPrint.size === 0) {
-    toast({
-      title: "خطأ",
-      description: "يرجى اختيار قسائم للطباعة",
-      variant: "destructive"
-    });
-    return;
+
+const exportSelectedVouchersToPDF = async (voucherData?: any[]): Promise<Blob | null> => {
+  let vouchersToPrint: any[] = [];
+
+  if (voucherData && voucherData.length > 0) {
+    // Use the provided voucher data (for automatic export after generation)
+    vouchersToPrint = voucherData;
+    console.log("Using provided voucher data:", vouchersToPrint);
+  } else {
+    // Use the selected vouchers from state (for manual export)
+    const selectedVoucherIds = Array.from(selectedVouchersForPrint);
+    console.log("Selected voucher IDs:", selectedVoucherIds);
+
+    if (selectedVoucherIds.length === 0) {
+      console.error("No vouchers selected for export");
+      toast({
+        title: "خطأ",
+        description: "يرجى اختيار قسائم للطباعة",
+        variant: "destructive"
+      });
+      return null;
+    }
+
+    // Get the actual voucher data for the selected IDs
+    vouchersToPrint = vouchers?.filter(v => selectedVouchersForPrint.has(v.id)) || [];
+    console.log("Vouchers to print from state:", vouchersToPrint);
+
+    if (vouchersToPrint.length === 0) {
+      console.error("No vouchers found in state for selected IDs");
+      toast({
+        title: "خطأ",
+        description: "لا توجد قسائم متاحة للتصدير",
+        variant: "destructive"
+      });
+      return null;
+    }
   }
 
   const selectedRouterData = routers?.find(r => r.id === selectedRouter);
+  console.log("Selected router data:", selectedRouterData);
+
   if (!selectedRouterData?.logo_url) {
+    console.error("No logo URL found for router:", selectedRouter);
     toast({
       title: "خطأ",
       description: "لا يوجد شعار للراوتر المحدد. يرجى رفع شعار للراوتر أولاً",
       variant: "destructive"
     });
-    return;
+    return null;
   }
 
   try {
@@ -232,85 +310,114 @@ const exportSelectedVouchersToPDF = async () => {
       format: "a4"
     });
 
-    const vouchersToPrint =
-      vouchers?.filter(v => selectedVouchersForPrint.has(v.id)) || [];
-
     const pageWidth = doc.internal.pageSize.width;
     const pageHeight = doc.internal.pageSize.height;
 
-    // القيم المقترحة للكارت
+    // Card dimensions and spacing
     const cardWidth = 100;
     const cardHeight = 60;
     const cardMargin = 15;
 
-    let x = 40; // بداية من اليسار
-    let y = 40; // بداية من فوق
-
-    toast({
-      title: "جاري التصدير",
-      description: `يتم الآن تصدير ${vouchersToPrint.length} قسيمة`
-    });
+    let x = 40;
+    let y = 40;
 
     for (const voucher of vouchersToPrint) {
+      console.log("Processing voucher:", voucher.code, "with logo URL:", selectedRouterData.logo_url);
+
+      // Create voucher card element
       const tempDiv = document.createElement("div");
       tempDiv.style.width = `${cardWidth}px`;
       tempDiv.style.height = `${cardHeight}px`;
+      tempDiv.style.padding = "5px";
       tempDiv.style.display = "flex";
+      tempDiv.style.flexDirection = "column";
       tempDiv.style.alignItems = "center";
       tempDiv.style.justifyContent = "center";
-      tempDiv.style.flexDirection = "column";
-      tempDiv.style.background = "#1f1f1fff";
-      tempDiv.style.border = "1px solid #d1d5db";
+      tempDiv.style.backgroundColor = "#1d1d1dff";
+      tempDiv.style.border = "1px solid #ddd";
       tempDiv.style.borderRadius = "5px";
-      tempDiv.style.fontFamily = "monospace";
-      tempDiv.style.fontSize = "10pt";
-      tempDiv.style.fontWeight = "bold";
-      tempDiv.style.textAlign = "center";
+      tempDiv.style.fontFamily = "Arial, sans-serif";
+      tempDiv.style.fontSize = "10px";
       tempDiv.style.position = "absolute";
       tempDiv.style.left = "-9999px";
 
       tempDiv.innerHTML = `
-        <img src="${selectedRouterData.logo_url}" style="width: 40px; height: 40px; margin-bottom: 2pt;" />
-        <p style="margin:0; font-size: 10pt;margin-bottom:8px;">${voucher.code}</p>
+        <img src="${selectedRouterData.logo_url}" style="width: 30px; height: 30px; margin-bottom: 5px;" />
+        <div style="font-weight: bold; font-size: 12px; margin-bottom: 3px;">${voucher.code}</div>
+        <div style="font-size: 8px; color: #666;">${selectedRouterData.router_name}</div>
       `;
 
       document.body.appendChild(tempDiv);
 
-      const canvas = await html2canvas(tempDiv, {
-        scale: 2,
-        backgroundColor: null,
-        logging: false,
-        useCORS: true
-      });
+      try {
+        console.log("Creating canvas for voucher:", voucher.code);
+        const canvas = await html2canvas(tempDiv, {
+          scale: 2,
+          backgroundColor: null,
+          logging: true,
+          useCORS: true,
+          allowTaint: true
+        });
 
-      document.body.removeChild(tempDiv);
+        console.log("Canvas created successfully for voucher:", voucher.code);
+        const imgData = canvas.toDataURL("image/png");
+        console.log("Image data created, adding to PDF");
+        doc.addImage(imgData, "PNG", x, y, cardWidth, cardHeight);
 
-      const imgData = canvas.toDataURL("image/png");
-      doc.addImage(imgData, "PNG", x, y, cardWidth, cardHeight);
-
-      // تحريك المؤشر للكارت التالي في نفس الصف
-      x += cardWidth + cardMargin;
-
-      // لو وصلنا لنهاية الصف → ننزل سطر جديد
-      if (x + cardWidth > pageWidth) {
-        x = 40;
-        y += cardHeight + cardMargin;
-
-        // لو الصفحة خلصت → صفحة جديدة
-        if (y + cardHeight > pageHeight) {
-          doc.addPage();
+        // Move to next position
+        x += cardWidth + cardMargin;
+        if (x + cardWidth > pageWidth) {
           x = 40;
-          y = 40;
+          y += cardHeight + cardMargin;
+          if (y + cardHeight > pageHeight) {
+            doc.addPage();
+            x = 40;
+            y = 40;
+          }
         }
+        console.log("Voucher added to PDF successfully");
+      } catch (error) {
+        console.error("Error creating canvas for voucher:", voucher.code, error);
+        // Try without the image if it fails
+        try {
+          console.log("Trying to create voucher without image");
+          tempDiv.innerHTML = `
+            <div style="font-weight: bold; font-size: 12px; margin-bottom: 3px;">${voucher.code}</div>
+            <div style="font-size: 8px; color: #020202ff;">${selectedRouterData.router_name}</div>
+          `;
+
+          const canvas = await html2canvas(tempDiv, {
+            scale: 2,
+            backgroundColor: "#ffffff",
+            logging: true
+          });
+
+          const imgData = canvas.toDataURL("image/png");
+          doc.addImage(imgData, "PNG", x, y, cardWidth, cardHeight);
+
+          // Move to next position
+          x += cardWidth + cardMargin;
+          if (x + cardWidth > pageWidth) {
+            x = 40;
+            y += cardHeight + cardMargin;
+            if (y + cardHeight > pageHeight) {
+              doc.addPage();
+              x = 40;
+              y = 40;
+            }
+          }
+          console.log("Voucher added to PDF without image");
+        } catch (fallbackError) {
+          console.error("Fallback also failed for voucher:", voucher.code, fallbackError);
+        }
+      } finally {
+        document.body.removeChild(tempDiv);
       }
     }
 
-    doc.save("vouchers.pdf");
-
-    toast({
-      title: "تم التصدير بنجاح",
-      description: `تم تصدير ${vouchersToPrint.length} قسيمة إلى PDF`
-    });
+    // Return the PDF as a blob
+    const pdfBlob = doc.output('blob');
+    return pdfBlob;
   } catch (error) {
     console.error("Error exporting PDF:", error);
     toast({
@@ -318,9 +425,36 @@ const exportSelectedVouchersToPDF = async () => {
       description: "فشل في تصدير الملف. يرجى المحاولة مرة أخرى.",
       variant: "destructive"
     });
+    return null;
   }
 };
 
+ const handleExportAndSave = async () => {
+  const pdfBlob = await exportSelectedVouchersToPDF();
+  if (pdfBlob) {
+    const selectedRouterData = routers?.find(r => r.id === selectedRouter);
+    const fileName = `vouchers_${selectedRouterData?.router_name || 'router'}_${new Date().toISOString().split('T')[0]}_${selectedVouchersForPrint.size}`;
+
+    addFile({
+      routerNumber: selectedRouterData?.router_name || selectedRouter,
+      quantity: selectedVouchersForPrint.size,
+      remaining: selectedVouchersForPrint.size,
+      fileName,
+      caption: exportDescription || "ملف قسائم",
+      expiry: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 1 year from now
+      pdfBlob
+    });
+
+    setIsExportDialogOpen(false);
+    setSelectedVouchersForPrint(new Set());
+    setExportDescription("");
+    
+    toast({
+      title: "تم الحفظ",
+      description: `تم حفظ ${selectedVouchersForPrint.size} قسيمة في الملفات`
+    });
+  }
+};
 
   return (
     <div className="min-h-screen bg-background p-6" dir="rtl">
@@ -331,7 +465,7 @@ const exportSelectedVouchersToPDF = async () => {
             <h1 className="text-3xl font-bold text-foreground">بيانات الكروت</h1>
             <p className="text-muted-foreground">إدارة وتوليد قسائم الواي فاي</p>
           </div>
-          
+
           <div className="flex gap-2">
             <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
               <DialogTrigger asChild>
@@ -350,13 +484,13 @@ const exportSelectedVouchersToPDF = async () => {
 
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="exportDescription">وصف الكارت</Label>
-                    <Input
-                      id="exportDescription"
-                      value={exportDescription}
-                      onChange={(e) => setExportDescription(e.target.value)}
-                      placeholder="أدخل وصف الكارت"
-                    />
+                  <Label htmlFor="exportDescription">وصف الكارت</Label>
+                  <Input
+                    id="exportDescription"
+                    value={exportDescription}
+                    onChange={(e) => setExportDescription(e.currentTarget.value)}
+                    placeholder="أدخل وصف الكارت"
+                  />
                   </div>
 
                   <div className="space-y-2">
@@ -407,12 +541,12 @@ const exportSelectedVouchersToPDF = async () => {
                   </div>
 
                   <Button
-                    onClick={exportSelectedVouchersToPDF}
+                    onClick={handleExportAndSave}
                     className="w-full"
                     disabled={selectedVouchersForPrint.size === 0}
                   >
                     <Download className="h-4 w-4 ml-2" />
-                    تصدير {selectedVouchersForPrint.size} كارت
+                    تصدير وحفظ {selectedVouchersForPrint.size} كارت
                   </Button>
                 </div>
               </DialogContent>
@@ -432,54 +566,54 @@ const exportSelectedVouchersToPDF = async () => {
                     اختر الراوتر والباقة وعدد القسائم المطلوبة
                   </DialogDescription>
                 </DialogHeader>
-                
+
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="router">الراوتر</Label>
-                    <Select value={selectedRouter} onValueChange={setSelectedRouter}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="اختر الراوتر" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {routers?.map((router) => (
-                          <SelectItem key={router.id} value={router.id}>
-                            {router.router_name} ({router.cloud_name})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <Label>الراوتر</Label>
+                  <Select value={selectedRouter} onValueChange={setSelectedRouter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="اختر الراوتر" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {routers?.map((router) => (
+                        <SelectItem key={router.id} value={router.id}>
+                          {router.router_name} ({router.cloud_name})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="package">الباقة</Label>
-                    <Select value={selectedPackage} onValueChange={setSelectedPackage}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="اختر الباقة" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {packages?.map((pkg) => (
-                          <SelectItem key={pkg.id} value={pkg.id}>
-                            {pkg.name} - {pkg.price} جنيه
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <Label>الباقة</Label>
+                  <Select value={selectedPackage} onValueChange={setSelectedPackage}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="اختر الباقة" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {packages?.map((pkg) => (
+                        <SelectItem key={pkg.id} value={pkg.id}>
+                          {pkg.name} - {pkg.price} جنيه
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="quantity">عدد القسائم</Label>
-                    <Input
-                      id="quantity"
-                      type="number"
-                      min="1"
-                      max="100"
-                      value={voucherQuantity}
-                      onChange={(e) => setVoucherQuantity(parseInt(e.target.value) || 1)}
-                    />
+                  <Label htmlFor="quantity">عدد القسائم</Label>
+                  <Input
+                    id="quantity"
+                    type="number"
+                    min="1"
+                    max="100"
+                    value={voucherQuantity}
+                    onChange={(e) => setVoucherQuantity(parseInt(e.currentTarget.value) || 1)}
+                  />
                   </div>
 
-                  <Button 
-                    onClick={handleGenerateVouchers} 
+                  <Button
+                    onClick={handleGenerateVouchers}
                     className="w-full"
                     disabled={createVouchersMutation.isPending}
                   >
@@ -512,7 +646,7 @@ const exportSelectedVouchersToPDF = async () => {
 
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="payment-method">طريقة الدفع</Label>
+                  <Label>طريقة الدفع</Label>
                   <Select value={paymentMethod} onValueChange={setPaymentMethod}>
                     <SelectTrigger>
                       <SelectValue placeholder="اختر طريقة الدفع" />
@@ -532,7 +666,7 @@ const exportSelectedVouchersToPDF = async () => {
                     id="sell-notes"
                     placeholder="أدخل أي ملاحظات إضافية..."
                     value={sellNotes}
-                    onChange={(e) => setSellNotes(e.target.value)}
+                    onChange={(e) => setSellNotes(e.currentTarget.value)}
                     rows={3}
                   />
                 </div>
@@ -702,8 +836,8 @@ const exportSelectedVouchersToPDF = async () => {
                           {new Date(voucher.created_at).toLocaleDateString('ar-EG')}
                         </TableCell>
                         <TableCell>
-                          {voucher.used_at ? 
-                            new Date(voucher.used_at).toLocaleDateString('ar-EG') : 
+                          {voucher.used_at ?
+                            new Date(voucher.used_at).toLocaleDateString('ar-EG') :
                             '-'
                           }
                         </TableCell>
@@ -711,14 +845,14 @@ const exportSelectedVouchersToPDF = async () => {
                           {voucher.used_by || '-'}
                         </TableCell>
                         <TableCell>
-                          {voucher.remaining_time_minutes ? 
-                            `${voucher.remaining_time_minutes} دقيقة` : 
+                          {voucher.remaining_time_minutes ?
+                            `${voucher.remaining_time_minutes} دقيقة` :
                             '-'
                           }
                         </TableCell>
                         <TableCell>
-                          {voucher.remaining_data_gb ? 
-                            `${voucher.remaining_data_gb} جيجا` : 
+                          {voucher.remaining_data_gb ?
+                            `${voucher.remaining_data_gb} جيجا` :
                             '-'
                           }
                         </TableCell>
