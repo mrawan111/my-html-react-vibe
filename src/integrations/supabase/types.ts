@@ -138,6 +138,7 @@ export type Database = {
           router_name: string
           status: string | null
           updated_at: string
+          logo_url?: string | null
         }
         Insert: {
           api_password?: string | null
@@ -156,6 +157,7 @@ export type Database = {
           router_name: string
           status?: string | null
           updated_at?: string
+          logo_url?: string | null
         }
         Update: {
           api_password?: string | null
@@ -174,6 +176,7 @@ export type Database = {
           router_name?: string
           status?: string | null
           updated_at?: string
+          logo_url?: string | null
         }
         Relationships: []
       }

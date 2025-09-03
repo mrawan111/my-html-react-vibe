@@ -18,6 +18,7 @@ export interface Router {
   connection_type?: string;
   hotspot_interface?: string;
   hotspot_enabled?: boolean;
+  logo_url?: string;
   created_at: string;
   updated_at: string;
 }
@@ -73,24 +74,46 @@ export const useUpdateRouter = () => {
 
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Router> & { id: string }) => {
+      console.log("Updating router with ID:", id, "Updates:", updates);
+
+      // 🧹 Remove undefined values so Supabase ignores them
+      const cleanUpdates = Object.fromEntries(
+        Object.entries(updates).filter(([_, v]) => v !== undefined)
+      );
+
+      console.log("Final update payload:", cleanUpdates);
+
       const { data, error } = await supabase
         .from("routers")
-        .update(updates)
+        .update(cleanUpdates)
         .eq("id", id)
-        .select()
-        .single();
+        .select(); // no .single() → safer
 
-      if (error) throw error;
-      return data;
+      if (error) {
+        console.error("Supabase update error:", error);
+        throw error;
+      }
+
+      if (!data || data.length === 0) {
+        throw new Error("Update failed - no rows returned");
+      }
+
+      console.log("Update successful, returned data:", data[0]);
+      return data[0];
     },
-    onSuccess: () => {
+
+    onSuccess: (updatedRouter) => {
+      // Refresh routers query so UI shows new logo
       queryClient.invalidateQueries({ queryKey: ["routers"] });
+
       toast({
         title: "تم بنجاح",
-        description: "تم تحديث الراوتر بنجاح",
+        description: `تم تحديث الراوتر ${updatedRouter.router_name}`,
       });
     },
+
     onError: (error) => {
+      console.error("Update router mutation error:", error);
       toast({
         title: "خطأ",
         description: "حدث خطأ أثناء تحديث الراوتر",
@@ -99,7 +122,6 @@ export const useUpdateRouter = () => {
     },
   });
 };
-
 export const useTestRouterConnection = () => {
   return useMutation({
     mutationFn: async (router: Router) => {

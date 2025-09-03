@@ -28,7 +28,6 @@ export default function VoucherCards() {
   const [selectedVoucherForDelete, setSelectedVoucherForDelete] = useState<string>("");
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const [selectedVouchersForPrint, setSelectedVouchersForPrint] = useState<Set<string>>(new Set());
-  const [exportImage, setExportImage] = useState<string | null>(null);
   const [exportDescription, setExportDescription] = useState<string>("");
 
   const { data: routers } = useRouters();
@@ -197,16 +196,7 @@ export default function VoucherCards() {
     }
   };
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setExportImage(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+
 
   const removeSelectedVoucher = (voucherId: string) => {
     setSelectedVouchersForPrint(prev => {
@@ -215,109 +205,122 @@ export default function VoucherCards() {
       return newSet;
     });
   };
+const exportSelectedVouchersToPDF = async () => {
+  if (selectedVouchersForPrint.size === 0) {
+    toast({
+      title: "خطأ",
+      description: "يرجى اختيار قسائم للطباعة",
+      variant: "destructive"
+    });
+    return;
+  }
 
-  const exportSelectedVouchersToPDF = async () => {
-    if (selectedVouchersForPrint.size === 0) {
-      toast({
-        title: "خطأ",
-        description: "يرجى اختيار قسائم للطباعة",
-        variant: "destructive"
+  const selectedRouterData = routers?.find(r => r.id === selectedRouter);
+  if (!selectedRouterData?.logo_url) {
+    toast({
+      title: "خطأ",
+      description: "لا يوجد شعار للراوتر المحدد. يرجى رفع شعار للراوتر أولاً",
+      variant: "destructive"
+    });
+    return;
+  }
+
+  try {
+    const doc = new jsPDF({
+      orientation: "portrait",
+      unit: "pt",
+      format: "a4"
+    });
+
+    const vouchersToPrint =
+      vouchers?.filter(v => selectedVouchersForPrint.has(v.id)) || [];
+
+    const pageWidth = doc.internal.pageSize.width;
+    const pageHeight = doc.internal.pageSize.height;
+
+    // القيم المقترحة للكارت
+    const cardWidth = 100;
+    const cardHeight = 60;
+    const cardMargin = 15;
+
+    let x = 40; // بداية من اليسار
+    let y = 40; // بداية من فوق
+
+    toast({
+      title: "جاري التصدير",
+      description: `يتم الآن تصدير ${vouchersToPrint.length} قسيمة`
+    });
+
+    for (const voucher of vouchersToPrint) {
+      const tempDiv = document.createElement("div");
+      tempDiv.style.width = `${cardWidth}px`;
+      tempDiv.style.height = `${cardHeight}px`;
+      tempDiv.style.display = "flex";
+      tempDiv.style.alignItems = "center";
+      tempDiv.style.justifyContent = "center";
+      tempDiv.style.flexDirection = "column";
+      tempDiv.style.background = "#1f1f1fff";
+      tempDiv.style.border = "1px solid #d1d5db";
+      tempDiv.style.borderRadius = "5px";
+      tempDiv.style.fontFamily = "monospace";
+      tempDiv.style.fontSize = "10pt";
+      tempDiv.style.fontWeight = "bold";
+      tempDiv.style.textAlign = "center";
+      tempDiv.style.position = "absolute";
+      tempDiv.style.left = "-9999px";
+
+      tempDiv.innerHTML = `
+        <img src="${selectedRouterData.logo_url}" style="width: 40px; height: 40px; margin-bottom: 2pt;" />
+        <p style="margin:0; font-size: 10pt;margin-bottom:8px;">${voucher.code}</p>
+      `;
+
+      document.body.appendChild(tempDiv);
+
+      const canvas = await html2canvas(tempDiv, {
+        scale: 2,
+        backgroundColor: null,
+        logging: false,
+        useCORS: true
       });
-      return;
-    }
 
-    if (!exportImage) {
-      toast({
-        title: "خطأ",
-        description: "يرجى اختيار صورة للكروت",
-        variant: "destructive"
-      });
-      return;
-    }
+      document.body.removeChild(tempDiv);
 
-    try {
-      const doc = new jsPDF({
-        orientation: "portrait",
-        unit: "pt",
-        format: "a4"
-      });
+      const imgData = canvas.toDataURL("image/png");
+      doc.addImage(imgData, "PNG", x, y, cardWidth, cardHeight);
 
-      const vouchersToPrint = vouchers?.filter(v => selectedVouchersForPrint.has(v.id)) || [];
-      const pageWidth = doc.internal.pageSize.width;
-      const pageHeight = doc.internal.pageSize.height;
-      
-      let yOffset = 40;
-      const cardHeight = 200;
-      const cardMargin = 25;
+      // تحريك المؤشر للكارت التالي في نفس الصف
+      x += cardWidth + cardMargin;
 
-      toast({
-        title: "جاري التصدير",
-        description: `يتم الآن تصدير ${vouchersToPrint.length} قسيمة`,
-      });
+      // لو وصلنا لنهاية الصف → ننزل سطر جديد
+      if (x + cardWidth > pageWidth) {
+        x = 40;
+        y += cardHeight + cardMargin;
 
-      for (const voucher of vouchersToPrint) {
-        if (yOffset + cardHeight + cardMargin > pageHeight) {
+        // لو الصفحة خلصت → صفحة جديدة
+        if (y + cardHeight > pageHeight) {
           doc.addPage();
-          yOffset = 40;
+          x = 40;
+          y = 40;
         }
-
-        const tempDiv = document.createElement('div');
-        tempDiv.style.width = `${pageWidth - 120}pt`;
-        tempDiv.style.padding = '20pt';
-        tempDiv.style.backgroundColor = 'grey';
-        tempDiv.style.border = '1px solid #d1d5db';
-        tempDiv.style.borderRadius = '10pt';
-        tempDiv.style.boxShadow = '4pt 4pt 0pt #f0f0f0';
-        tempDiv.style.position = 'absolute';
-        tempDiv.style.left = '-9999px';
-        tempDiv.style.direction = 'rtl';
-        tempDiv.style.fontFamily = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
-        tempDiv.style.textAlign = 'center';
-        tempDiv.style.fontSize = '12pt';
-
-        tempDiv.innerHTML = `
-          <div style="display: flex; align-items: center; gap: 10pt;">
-            <img src="${exportImage}" style="width: 70pt; height: 70pt; border: 1pt solid #000; border-radius: 5pt;" />
-            <div style="flex: 1; direction: rtl;">
-              <p style="margin: 0 0 5pt 0; font-weight: bold; font-size: 14pt;">${exportDescription || 'قسيمة واي فاي'}</p>
-              <p style="margin: 0; font-family: monospace; font-size: 16pt; font-weight: bold; letter-spacing: 2pt;">${voucher.code}</p>
-            </div>
-          </div>
-        `;
-
-        document.body.appendChild(tempDiv);
-
-        const canvas = await html2canvas(tempDiv, {
-          scale: 2,
-          backgroundColor: null,
-          logging: false,
-          useCORS: true
-        });
-
-        document.body.removeChild(tempDiv);
-
-        const imgData = canvas.toDataURL('image/png');
-        doc.addImage(imgData, 'PNG', 40, yOffset, pageWidth - 80, cardHeight);
-
-        yOffset += cardHeight + cardMargin;
       }
-
-      doc.save("vouchers.pdf");
-
-      toast({
-        title: "تم التصدير بنجاح",
-        description: `تم تصدير ${vouchersToPrint.length} قسيمة إلى PDF`,
-      });
-
-    } catch (error) {
-      console.error("Error exporting PDF:", error);
-      toast({
-        title: "خطأ",
-        description: "فشل في تصدير الملف. يرجى المحاولة مرة أخرى.",
-        variant: "destructive"
-      });
     }
-  };
+
+    doc.save("vouchers.pdf");
+
+    toast({
+      title: "تم التصدير بنجاح",
+      description: `تم تصدير ${vouchersToPrint.length} قسيمة إلى PDF`
+    });
+  } catch (error) {
+    console.error("Error exporting PDF:", error);
+    toast({
+      title: "خطأ",
+      description: "فشل في تصدير الملف. يرجى المحاولة مرة أخرى.",
+      variant: "destructive"
+    });
+  }
+};
+
 
   return (
     <div className="min-h-screen bg-background p-6" dir="rtl">
@@ -341,33 +344,11 @@ export default function VoucherCards() {
                 <DialogHeader>
                   <DialogTitle>تصدير كروت القسائم</DialogTitle>
                   <DialogDescription>
-                    اختر الصورة والوصف للكروت المطلوبة
+                    أدخل وصف الكروت المطلوبة
                   </DialogDescription>
                 </DialogHeader>
-                
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="exportImage">صورة الكارت</Label>
-                    <Input
-                      id="exportImage"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageSelect}
-                    />
-                    {exportImage && (
-                      <div className="mt-2">
-                        <p className="text-sm font-medium mb-2">معاينة الصورة:</p>
-                        <div className="border rounded-md p-2">
-                          <img 
-                            src={exportImage} 
-                            alt="معاينة الصورة" 
-                            className="max-h-40 mx-auto object-contain"
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </div>
 
+                <div className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="exportDescription">وصف الكارت</Label>
                     <Input
@@ -402,11 +383,11 @@ export default function VoucherCards() {
                   <div className="border rounded-md p-4 bg-muted/30">
                     <h4 className="font-medium mb-2">معاينة الكارت:</h4>
                     <div className="flex gap-4 items-start">
-                      {exportImage && (
+                      {selectedRouter && routers?.find(r => r.id === selectedRouter)?.logo_url && (
                         <div className="w-1/3 border rounded-md overflow-hidden">
-                          <img 
-                            src={exportImage} 
-                            alt="معاينة الكارت" 
+                          <img
+                            src={routers?.find(r => r.id === selectedRouter)?.logo_url}
+                            alt="شعار الراوتر"
                             className="w-full h-auto"
                           />
                         </div>
@@ -415,8 +396,8 @@ export default function VoucherCards() {
                         <p className="text-sm mb-2">{exportDescription || "وصف الكارت سيظهر هنا"}</p>
                         <div className="bg-background p-2 rounded border">
                           <p className="font-mono text-center text-lg font-bold">
-                            {selectedVouchersForPrint.size > 0 
-                              ? vouchers?.find(v => selectedVouchersForPrint.has(v.id))?.code 
+                            {selectedVouchersForPrint.size > 0
+                              ? vouchers?.find(v => selectedVouchersForPrint.has(v.id))?.code
                               : "كود القسيمة"
                             }
                           </p>
@@ -425,10 +406,10 @@ export default function VoucherCards() {
                     </div>
                   </div>
 
-                  <Button 
-                    onClick={exportSelectedVouchersToPDF} 
+                  <Button
+                    onClick={exportSelectedVouchersToPDF}
                     className="w-full"
-                    disabled={selectedVouchersForPrint.size === 0 || !exportImage}
+                    disabled={selectedVouchersForPrint.size === 0}
                   >
                     <Download className="h-4 w-4 ml-2" />
                     تصدير {selectedVouchersForPrint.size} كارت
