@@ -11,7 +11,7 @@ import Files from "./pages/Files";
 import Sales from "./pages/Sales";
 import DailyUsage from "./pages/DailyUsage";
 import Routers from "./pages/Routers";
-import Bills from "./pages/Bills";
+
 import ServerConnectionForm from "./pages/ServerConnectionForm";
 import VoucherCards from "./pages/VoucherCards";
 import CardData from "./pages/CardData";
@@ -81,11 +81,6 @@ const App = () => (
           <Route path="/routers" element={
             <ProtectedRoute>
               <DashboardLayout><Routers /></DashboardLayout>
-            </ProtectedRoute>
-          } />
-          <Route path="/bills" element={
-            <ProtectedRoute>
-              <DashboardLayout><Bills /></DashboardLayout>
             </ProtectedRoute>
           } />
           <Route path="/server-connection" element={

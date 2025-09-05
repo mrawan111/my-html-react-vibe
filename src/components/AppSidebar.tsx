@@ -43,7 +43,6 @@ const wifiCardItems = [
   { title: "مبيعات الكروت", url: "/sales", icon: ShoppingCart },
   { title: "بيانات الراوتر", url: "/routers", icon: Router },
   { title: "الاتصال بسيرفر", url: "/server-connection", icon: Monitor },
-  { title: "فواتير الكروت", url: "/bills", icon: Receipt },
   { title: "بيانات الكروت", url: "/cards", icon: CreditCard },
   { title: "الاستهلاك اليومي", url: "/daily-usage", icon: BarChart3 },
 ];
