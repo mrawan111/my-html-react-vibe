@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { signIn } from "@/lib/auth";
 import { useAuth } from "@/hooks/useAuth";
+import { Search, Bell, LogOut, User, Wifi } from "lucide-react";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -59,7 +60,8 @@ const Login = () => {
         {/* Logo */}
         <div className="flex justify-center mb-6">
           <div className="w-24 h-24 rounded-full border-4 border-primary shadow-[var(--shadow-glow)] bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
-            <span className="text-2xl font-bold text-primary">ETV</span>
+          <Wifi className="h-5 w-5 text-primary-foreground" />
+          Kayan
           </div>
         </div>
         

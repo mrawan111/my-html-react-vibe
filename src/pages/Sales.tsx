@@ -1,11 +1,15 @@
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { ChevronDown } from "lucide-react";
+import { useState } from "react";
+import { Badge } from "@/components/ui/badge";
 import { useSalesStats } from "@/hooks/useSales";
+import { useVouchers } from "@/hooks/useVouchers";
 
 export default function Sales() {
   const { data: salesData, isLoading, error } = useSalesStats();
+  const { data: vouchers, isLoading: vouchersLoading, error: vouchersError } = useVouchers();
 
-  if (isLoading) {
+  if (isLoading || vouchersLoading) {
     return (
       <div className="flex-1 px-6 pt-6 space-y-6 overflow-auto">
         <h1 className="text-foreground text-xl font-bold">مبيعات الكروت</h1>
@@ -20,7 +24,7 @@ export default function Sales() {
     );
   }
 
-  if (error) {
+  if (error || vouchersError) {
     return (
       <div className="flex-1 px-6 pt-6 space-y-6 overflow-auto">
         <h1 className="text-foreground text-xl font-bold">مبيعات الكروت</h1>
@@ -35,10 +39,14 @@ export default function Sales() {
     );
   }
 
+  // Filter vouchers with status 'active' or 'suspended' (used vouchers)
+  const usedVouchers = vouchers?.filter(v => v.status === 'active' || v.status === 'suspended') || [];
+
   return (
     <div className="flex-1 px-6 pt-6 space-y-6 overflow-auto">
       <h1 className="text-foreground text-xl font-bold">مبيعات الكروت</h1>
-      
+
+      {/* Sales Stats Table */}
       <Card className="bg-card border-border">
         <CardContent className="p-0">
           <div className="overflow-x-auto">
@@ -88,6 +96,32 @@ export default function Sales() {
               </tbody>
             </table>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Used Vouchers Preview */}
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <CardTitle>معاينة الكروت المستخدمة</CardTitle>
+          <CardDescription>عرض الكروت التي تم استخدامها أو بيعها</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {usedVouchers.length === 0 ? (
+            <p className="text-muted-foreground text-center py-6">لا توجد كروت مستخدمة حالياً</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {usedVouchers.map((voucher) => (
+                <div key={voucher.id} className="border rounded p-4 bg-background shadow-sm">
+                  <div className="mb-2 font-mono font-bold text-center">{voucher.code}</div>
+                  <div className="flex justify-center">
+                    <Badge variant={voucher.status === 'active' ? 'default' : 'outline'}>
+                      {voucher.status === 'active' ? 'نشط' : 'مباع'}
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

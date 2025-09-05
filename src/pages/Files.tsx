@@ -59,7 +59,7 @@ export default function Files() {
   };
 
   return (
-    <div className="flex-1 px-6 pt-6 space-y-6 overflow-auto">
+    <div className="flex-1 px-4 sm:px-6 pt-4 sm:pt-6 space-y-6 overflow-auto">
       <h1 className="text-foreground text-2xl font-bold mb-4">ملفات الكروت</h1>
 
       <Card className="bg-card border-border">
@@ -103,7 +103,7 @@ export default function Files() {
                             className="text-primary hover:text-primary/80 hover:bg-primary/10"
                           >
                             <Edit className="h-4 w-4 ml-1" />
-                            تعديل
+                            <span className="hidden sm:inline">تعديل</span>
                           </Button>
                           <Button
                             variant="ghost"
@@ -112,7 +112,7 @@ export default function Files() {
                             onClick={() => handleDownload(file)}
                           >
                             <Download className="h-4 w-4 ml-1" />
-                            تحميل
+                            <span className="hidden sm:inline">تحميل</span>
                           </Button>
                           <Button
                             variant="ghost"
@@ -121,7 +121,7 @@ export default function Files() {
                             onClick={() => handleDelete(file.id)}
                           >
                             <Trash2 className="h-4 w-4 ml-1" />
-                            حذف
+                            <span className="hidden sm:inline">حذف</span>
                           </Button>
                         </div>
                       </td>

@@ -1,27 +1,41 @@
-# TODO: Router Logo and Auto PDF Export Implementation
+# Responsiveness Improvements for Mobile and Different Devices
 
-## 1. Update Router Interface
-- [x] Add logo field to Router interface in useRouters.ts
-- [ ] Update database schema (assume logo_url field added to routers table)
+## Information Gathered
+- Project uses React with Tailwind CSS and shadcn/ui components
+- Sidebar is already responsive using shadcn/ui Sidebar component with mobile drawer
+- Most pages use tables with overflow-x-auto for horizontal scrolling
+- Forms are in dialogs with responsive max-widths
+- Current issues: fixed paddings, button text visibility, form layouts, navbar search width
 
-## 2. Add Logo Upload in Routers Page
-- [x] Add logo upload input in Routers.tsx table
-- [x] Implement logo preview and save functionality
-- [ ] Store logos in public/logos/ directory
+## Plan
+### Global Layout Adjustments
+- [ ] Update DashboardLayout padding for mobile
+- [ ] Adjust AppNavbar search bar width for mobile
 
-## 3. Modify Voucher Cards for Auto Export
-- [ ] Update VoucherCards.tsx to get router logo automatically from selected router
-- [ ] Modify handleGenerateVouchers to trigger auto PDF export after generation
-- [ ] Remove manual image selection, use router logo instead
-- [ ] Add validation to ensure router has logo before export
+### Page-Specific Improvements
+- [ ] Files.tsx: Make action buttons responsive (hide text on mobile)
+- [ ] Users.tsx: Make form grid responsive, action buttons responsive
+- [ ] Sales.tsx: Ensure table responsiveness
+- [ ] VoucherCards.tsx: Make header responsive, table actions responsive
+- [ ] Other pages: Check and update similar patterns
 
-## 4. Push PDFs to Files Page
-- [ ] Make Files.tsx dynamic (use state instead of static data)
-- [ ] Add function to add new PDF entries to files list
-- [ ] Integrate with voucher generation to push PDFs
+### Component Updates
+- [ ] Update button components with responsive text visibility
+- [ ] Ensure dialogs are fully responsive
+- [ ] Check table components for mobile optimization
 
-## 5. Testing and Followup
-- [ ] Test logo upload and display
-- [ ] Test auto PDF export on voucher generation
-- [ ] Test PDF addition to Files.tsx
-- [ ] Verify PDF download and display
+## Dependent Files
+- src/components/DashboardLayout.tsx
+- src/components/AppNavbar.tsx
+- src/pages/Files.tsx
+- src/pages/Users.tsx
+- src/pages/Sales.tsx
+- src/pages/VoucherCards.tsx
+- src/pages/DailyUsage.tsx
+- src/pages/Routers.tsx
+- src/pages/ServerConnectionForm.tsx
+
+## Followup Steps
+- [ ] Test on different screen sizes
+- [ ] Verify touch interactions
+- [ ] Check accessibility on mobile
