@@ -7,7 +7,7 @@ import { toast } from "@/hooks/use-toast";
 export default function Files() {
   const { files, removeFile } = useFiles();
 
-  const handleDownload = (file: any) => {
+  const handleDownload = async (file: any) => {
     if (file.pdfBlob) {
       const url = URL.createObjectURL(file.pdfBlob);
       const a = document.createElement('a');
@@ -18,12 +18,29 @@ export default function Files() {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } else if (file.pdfUrl) {
-      const a = document.createElement('a');
-      a.href = file.pdfUrl;
-      a.download = `${file.fileName}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      try {
+        // Fetch the PDF as a blob to force download
+        const response = await fetch(file.pdfUrl);
+        if (!response.ok) {
+          throw new Error('Failed to fetch PDF');
+        }
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${file.fileName}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } catch (error) {
+        console.error('Error downloading PDF:', error);
+        toast({
+          title: "خطأ",
+          description: "فشل في تحميل ملف PDF",
+          variant: "destructive"
+        });
+      }
     } else {
       toast({
         title: "خطأ",

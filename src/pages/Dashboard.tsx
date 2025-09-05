@@ -20,6 +20,9 @@ import {
 import { TrendingUp, TrendingDown, Users, Wifi, DollarSign, Activity, AlertTriangle, CheckCircle } from "lucide-react";
 import { useVouchers } from "@/hooks/useVouchers";
 import { useRouters } from "@/hooks/useRouters";
+import { useSalesStats } from "@/hooks/useSales";
+import { useWeeklyStats, useMonthlyStats } from "@/hooks/useDailyStats";
+import { useActiveUsers } from "@/hooks/useUsageLogs";
 import { useMemo } from "react";
 
 const weeklyUsageData = [

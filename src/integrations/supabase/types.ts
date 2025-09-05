@@ -298,42 +298,81 @@ export type Database = {
       voucher_packages: {
         Row: {
           created_at: string
-          data_limit_gb: number | null
+          router_number: string | null
+          quantity: number | null
+          remaining: number | null
           description: string | null
           duration_days: number | null
-          duration_hours: number | null
-          duration_minutes: number | null
           id: string
           is_active: boolean | null
           name: string
           price: number
+          pdf_url: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
-          data_limit_gb?: number | null
+          router_number?: string | null
+          quantity?: number | null
+          remaining?: number | null
           description?: string | null
           duration_days?: number | null
-          duration_hours?: number | null
-          duration_minutes?: number | null
           id?: string
           is_active?: boolean | null
           name: string
           price: number
+          pdf_url?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
-          data_limit_gb?: number | null
+          router_number?: string | null
+          quantity?: number | null
+          remaining?: number | null
           description?: string | null
           duration_days?: number | null
-          duration_hours?: number | null
-          duration_minutes?: number | null
           id?: string
           is_active?: boolean | null
           name?: string
           price?: number
+          pdf_url?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      card_files: {
+        Row: {
+          id: string
+          router_number: string
+          quantity: number
+          remaining: number
+          file_name: string
+          caption: string
+          expiry: string
+          created_at: string
+          pdf_url: string | null
+        }
+        Insert: {
+          id?: string
+          router_number: string
+          quantity: number
+          remaining: number
+          file_name: string
+          caption: string
+          expiry: string
+          created_at?: string
+          pdf_url?: string | null
+        }
+        Update: {
+          id?: string
+          router_number?: string
+          quantity?: number
+          remaining?: number
+          file_name?: string
+          caption?: string
+          expiry?: string
+          created_at?: string
+          pdf_url?: string | null
         }
         Relationships: []
       }
