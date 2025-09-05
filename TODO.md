@@ -2,10 +2,11 @@
 
 ## Information Gathered
 - Project uses React with Tailwind CSS and shadcn/ui components
-- Sidebar is already responsive using shadcn/ui Sidebar component with mobile drawer
+- Sidebar uses shadcn/ui Sidebar component with mobile drawer
 - Most pages use tables with overflow-x-auto for horizontal scrolling
 - Forms are in dialogs with responsive max-widths
 - Current issues: fixed paddings, button text visibility, form layouts, navbar search width
+- Sidebar responsiveness fixed: removed defaultOpen, updated collapsed logic for mobile
 
 ## Plan
 ### Global Layout Adjustments

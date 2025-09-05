@@ -56,10 +56,10 @@ const supportItems = [
 ];
 
 export function AppSidebar() {
-  const { state } = useSidebar();
+  const { state, isMobile } = useSidebar();
   const location = useLocation();
   const currentPath = location.pathname;
-  const collapsed = state === "collapsed";
+  const collapsed = state === "collapsed" && !isMobile;
 
   const [openSections, setOpenSections] = useState({
     wifi: true,
