@@ -126,3 +126,31 @@ export const useMonthlyStats = (routerId?: string) => {
     },
   });
 };
+
+export const useDailyUsage = () => {
+  return useQuery({
+    queryKey: ["daily-usage"],
+    queryFn: async () => {
+      // Get today's data grouped by router
+      const today = new Date().toISOString().split('T')[0];
+      
+      const { data, error } = await supabase
+        .from("daily_stats")
+        .select(`
+          *,
+          routers!inner(router_name, location)
+        `)
+        .eq("date", today);
+
+      if (error) throw error;
+
+      // Transform data for the daily usage component
+      return data.map(stat => ({
+        cloudName: (stat.routers as any)?.router_name || "غير محدد",
+        placeName: (stat.routers as any)?.location || "غير محدد",
+        dailyCards: stat.total_vouchers_sold || 0,
+        dailyData: stat.total_data_used_gb || 0
+      }));
+    },
+  });
+};

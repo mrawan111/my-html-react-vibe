@@ -106,13 +106,9 @@ export const useCreateVouchers = () => {
         
         // Calculate expiry date
         let expiresAt = null;
-        if (packageData.duration_days || packageData.duration_hours || packageData.duration_minutes) {
+        if (packageData.duration_days) {
           const now = new Date();
-          const totalMinutes = 
-            (packageData.duration_days || 0) * 24 * 60 +
-            (packageData.duration_hours || 0) * 60 +
-            (packageData.duration_minutes || 0);
-          
+          const totalMinutes = (packageData.duration_days || 0) * 24 * 60;
           expiresAt = new Date(now.getTime() + totalMinutes * 60 * 1000).toISOString();
         }
 
@@ -122,11 +118,8 @@ export const useCreateVouchers = () => {
           router_id: routerId,
           status: 'unused' as const,
           expires_at: expiresAt,
-          remaining_data_gb: packageData.data_limit_gb,
-          remaining_time_minutes: 
-            (packageData.duration_days || 0) * 24 * 60 +
-            (packageData.duration_hours || 0) * 60 +
-            (packageData.duration_minutes || 0) || null
+          remaining_data_gb: null, // Will be set based on package type
+          remaining_time_minutes: (packageData.duration_days || 0) * 24 * 60 || null
         };
 
         vouchers.push(voucher);

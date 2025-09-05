@@ -47,7 +47,11 @@ export const useSalesStats = (routerId?: string) => {
     queryFn: async () => {
       let query = supabase
         .from("sales")
-        .select("amount, sold_at");
+        .select(`
+          amount,
+          sold_at,
+          routers!inner(router_name, location)
+        `);
 
       if (routerId) {
         query = query.eq("router_id", routerId);
@@ -57,25 +61,44 @@ export const useSalesStats = (routerId?: string) => {
 
       if (error) throw error;
 
-      // Calculate stats
-      const totalRevenue = data.reduce((sum, sale) => sum + sale.amount, 0);
-      const todaySales = data.filter(sale => {
-        const today = new Date().toDateString();
-        return new Date(sale.sold_at).toDateString() === today;
-      }).length;
-
-      const thisMonth = new Date().getMonth();
-      const thisYear = new Date().getFullYear();
-      const monthlySales = data.filter(sale => {
+      // Group by router and calculate daily, weekly, monthly stats
+      const routerStats = data.reduce((acc: any, sale: any) => {
+        const routerName = sale.routers?.router_name || "غير محدد";
+        const location = sale.routers?.location || "غير محدد";
         const saleDate = new Date(sale.sold_at);
-        return saleDate.getMonth() === thisMonth && saleDate.getFullYear() === thisYear;
-      }).length;
+        const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        const weekAgo = new Date(today);
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        const monthAgo = new Date(today);
+        monthAgo.setMonth(monthAgo.getMonth() - 1);
 
-      return {
-        totalRevenue,
-        todaySales,
-        monthlySales
-      };
+        if (!acc[routerName]) {
+          acc[routerName] = {
+            cloudName: routerName,
+            placeName: location,
+            dailySales: 0,
+            weeklySales: 0,
+            monthlySales: 0
+          };
+        }
+
+        // Count sales for different periods
+        if (saleDate.toDateString() === today.toDateString()) {
+          acc[routerName].dailySales++;
+        }
+        if (saleDate >= weekAgo) {
+          acc[routerName].weeklySales++;
+        }
+        if (saleDate >= monthAgo) {
+          acc[routerName].monthlySales++;
+        }
+
+        return acc;
+      }, {});
+
+      return Object.values(routerStats);
     },
   });
 };

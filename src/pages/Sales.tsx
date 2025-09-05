@@ -68,7 +68,7 @@ export default function Sales() {
                 </tr>
               </thead>
               <tbody>
-                {salesData && salesData.length > 0 ? (
+                {salesData && Array.isArray(salesData) && salesData.length > 0 ? (
                   salesData.map((sale: any, index: number) => (
                     <tr key={index} className={`${index % 2 === 0 ? 'bg-accent/50' : 'bg-card'} hover:bg-accent transition-colors`}>
                       <td className="py-3 px-2 text-center">{sale.cloudName}</td>
