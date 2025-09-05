@@ -1,38 +1,40 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { ChevronDown } from "lucide-react";
-
-const salesData = [
-  {
-    cloudName: "Frindes_Cafe",
-    placeName: "MESHdesk_frindes_cafe_mcp_490",
-    dailySales: 2,
-    weeklySales: 15,
-    monthlySales: 60
-  },
-  {
-    cloudName: "Frindes_Cafe",
-    placeName: "Mo_Salah",
-    dailySales: 7,
-    weeklySales: 40,
-    monthlySales: 170
-  },
-  {
-    cloudName: "Frindes_Cafe",
-    placeName: "Café_Time",
-    dailySales: 5,
-    weeklySales: 25,
-    monthlySales: 100
-  },
-  {
-    cloudName: "Frindes_Cafe",
-    placeName: "Star_Net",
-    dailySales: 9,
-    weeklySales: 50,
-    monthlySales: 210
-  }
-];
+import { useSalesStats } from "@/hooks/useSales";
 
 export default function Sales() {
+  const { data: salesData, isLoading, error } = useSalesStats();
+
+  if (isLoading) {
+    return (
+      <div className="flex-1 px-6 pt-6 space-y-6 overflow-auto">
+        <h1 className="text-foreground text-xl font-bold">مبيعات الكروت</h1>
+        <Card className="bg-card border-border">
+          <CardContent className="p-4">
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">جاري التحميل...</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex-1 px-6 pt-6 space-y-6 overflow-auto">
+        <h1 className="text-foreground text-xl font-bold">مبيعات الكروت</h1>
+        <Card className="bg-card border-border">
+          <CardContent className="p-4">
+            <div className="text-center py-12">
+              <p className="text-destructive">حدث خطأ في تحميل البيانات</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="flex-1 px-6 pt-6 space-y-6 overflow-auto">
       <h1 className="text-foreground text-xl font-bold">مبيعات الكروت</h1>
@@ -66,15 +68,23 @@ export default function Sales() {
                 </tr>
               </thead>
               <tbody>
-                {salesData.map((sale, index) => (
-                  <tr key={index} className={`${index % 2 === 0 ? 'bg-accent/50' : 'bg-card'} hover:bg-accent transition-colors`}>
-                    <td className="py-3 px-2 text-center">{sale.cloudName}</td>
-                    <td className="py-3 px-2 text-center">{sale.placeName}</td>
-                    <td className="py-3 px-2 text-center">{sale.dailySales}</td>
-                    <td className="py-3 px-2 text-center">{sale.weeklySales}</td>
-                    <td className="py-3 px-2 text-center">{sale.monthlySales}</td>
+                {salesData && salesData.length > 0 ? (
+                  salesData.map((sale: any, index: number) => (
+                    <tr key={index} className={`${index % 2 === 0 ? 'bg-accent/50' : 'bg-card'} hover:bg-accent transition-colors`}>
+                      <td className="py-3 px-2 text-center">{sale.cloudName}</td>
+                      <td className="py-3 px-2 text-center">{sale.placeName}</td>
+                      <td className="py-3 px-2 text-center">{sale.dailySales}</td>
+                      <td className="py-3 px-2 text-center">{sale.weeklySales}</td>
+                      <td className="py-3 px-2 text-center">{sale.monthlySales}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={5} className="py-12 text-center text-muted-foreground">
+                      لا توجد مبيعات متاحة
+                    </td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>
