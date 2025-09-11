@@ -31,7 +31,12 @@ const ServerConnectionForm = () => {
         identifier: identifier,
         ip_address: ipAddress,
         location: location,
-        status: 'offline'
+        status: 'offline',
+        api_port: parseInt(apiPort),
+        api_username: apiUsername,
+        api_password: apiPassword,
+        connection_type: connectionType,
+        hotspot_interface: hotspotInterface || null
       });
       
       // Reset form
@@ -52,7 +57,16 @@ const ServerConnectionForm = () => {
 
   return (
     <div className="flex-1 px-6 pt-6 space-y-6 overflow-auto">
-      <h1 className="text-foreground text-xl font-bold">إضافة راوتر MikroTik</h1>
+      <div className="flex justify-between items-center">
+        <h1 className="text-foreground text-xl font-bold">إضافة راوتر MikroTik</h1>
+        <Button 
+          onClick={() => window.location.href = '/#/router-test'}
+          variant="outline"
+          className="flex items-center gap-2"
+        >
+          اختبار الاتصال
+        </Button>
+      </div>
       <Card className="bg-card border-border">
         <CardHeader>
           <CardTitle>بيانات الاتصال براوتر MikroTik</CardTitle>

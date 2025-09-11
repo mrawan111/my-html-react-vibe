@@ -4,9 +4,10 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useRouters, useTestRouterConnection, useUpdateRouter } from "@/hooks/useRouters";
+import { ConnectionTestButton } from "@/components/ConnectionTestButton";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
-import { Wifi, WifiOff, Settings, Upload, Image } from "lucide-react";
+import { Wifi, WifiOff, Settings, Upload, Image, Plus } from "lucide-react";
 
 export default function Routers() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -51,7 +52,16 @@ export default function Routers() {
   }
   return (
     <div className="flex-1 px-6 pt-6 space-y-6 overflow-auto">
-      <h1 className="text-foreground text-xl font-bold">بيانات الراوتر</h1>
+      <div className="flex justify-between items-center">
+        <h1 className="text-foreground text-xl font-bold">بيانات الراوتر</h1>
+        <Button 
+          onClick={() => window.location.href = '/#/server-connection'}
+          className="flex items-center gap-2"
+        >
+          <Plus className="w-4 h-4" />
+          إضافة راوتر جديد
+        </Button>
+      </div>
       
       <Card className="bg-card border-border">
         <CardHeader>
@@ -119,16 +129,7 @@ export default function Routers() {
                     <td className="py-4 px-2">{router.ip_address || "لا يوجد"}</td>
                     <td className="py-4 px-2">
                       <div className="flex gap-2 justify-center items-center">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => testConnection.mutate(router)}
-                          disabled={testConnection.isPending}
-                          className="flex items-center gap-1"
-                        >
-                          {router.status === 'online' ? <Wifi size={14} /> : <WifiOff size={14} />}
-                          اختبار الاتصال
-                        </Button>
+                        <ConnectionTestButton router={router} />
                         <Button variant="outline" size="sm" className="flex items-center gap-1">
                           <Settings size={14} />
                           تعديل

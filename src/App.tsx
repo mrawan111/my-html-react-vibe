@@ -11,7 +11,7 @@ import Files from "./pages/Files";
 import Sales from "./pages/Sales";
 import DailyUsage from "./pages/DailyUsage";
 import Routers from "./pages/Routers";
-
+import RouterTest from "./pages/RouterTest";
 import ServerConnectionForm from "./pages/ServerConnectionForm";
 import VoucherCards from "./pages/VoucherCards";
 import CardData from "./pages/CardData";
@@ -86,6 +86,11 @@ const App = () => (
           <Route path="/server-connection" element={
             <ProtectedRoute>
               <DashboardLayout><ServerConnectionForm /></DashboardLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/router-test" element={
+            <ProtectedRoute>
+              <DashboardLayout><RouterTest /></DashboardLayout>
             </ProtectedRoute>
           } />
           <Route path="/cards" element={
