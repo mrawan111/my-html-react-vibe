@@ -135,10 +135,11 @@ export type Database = {
           ip_address: unknown | null
           last_contact: string | null
           location: string | null
+          logo_url: string | null
           router_name: string
           status: string | null
           updated_at: string
-          logo_url?: string | null
+          user_id: string | null
         }
         Insert: {
           api_password?: string | null
@@ -154,10 +155,11 @@ export type Database = {
           ip_address?: unknown | null
           last_contact?: string | null
           location?: string | null
+          logo_url?: string | null
           router_name: string
           status?: string | null
           updated_at?: string
-          logo_url?: string | null
+          user_id?: string | null
         }
         Update: {
           api_password?: string | null
@@ -173,10 +175,11 @@ export type Database = {
           ip_address?: unknown | null
           last_contact?: string | null
           location?: string | null
+          logo_url?: string | null
           router_name?: string
           status?: string | null
           updated_at?: string
-          logo_url?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -298,81 +301,54 @@ export type Database = {
       voucher_packages: {
         Row: {
           created_at: string
-          router_number: string | null
-          quantity: number | null
-          remaining: number | null
+          data_limit_gb: number | null
           description: string | null
           duration_days: number | null
+          duration_hours: number | null
+          duration_minutes: number | null
           id: string
           is_active: boolean | null
           name: string
-          price: number
           pdf_url: string | null
+          price: number
+          quantity: number | null
+          remaining: number | null
+          router_number: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
-          router_number?: string | null
-          quantity?: number | null
-          remaining?: number | null
+          data_limit_gb?: number | null
           description?: string | null
           duration_days?: number | null
+          duration_hours?: number | null
+          duration_minutes?: number | null
           id?: string
           is_active?: boolean | null
           name: string
-          price: number
           pdf_url?: string | null
+          price: number
+          quantity?: number | null
+          remaining?: number | null
+          router_number?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
-          router_number?: string | null
-          quantity?: number | null
-          remaining?: number | null
+          data_limit_gb?: number | null
           description?: string | null
           duration_days?: number | null
+          duration_hours?: number | null
+          duration_minutes?: number | null
           id?: string
           is_active?: boolean | null
           name?: string
+          pdf_url?: string | null
           price?: number
-          pdf_url?: string | null
+          quantity?: number | null
+          remaining?: number | null
+          router_number?: string | null
           updated_at?: string
-        }
-        Relationships: []
-      }
-      card_files: {
-        Row: {
-          id: string
-          router_number: string
-          quantity: number
-          remaining: number
-          file_name: string
-          caption: string
-          expiry: string
-          created_at: string
-          pdf_url: string | null
-        }
-        Insert: {
-          id?: string
-          router_number: string
-          quantity: number
-          remaining: number
-          file_name: string
-          caption: string
-          expiry: string
-          created_at?: string
-          pdf_url?: string | null
-        }
-        Update: {
-          id?: string
-          router_number?: string
-          quantity?: number
-          remaining?: number
-          file_name?: string
-          caption?: string
-          expiry?: string
-          created_at?: string
-          pdf_url?: string | null
         }
         Relationships: []
       }
@@ -444,7 +420,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      admin_cleanup_and_setup: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
