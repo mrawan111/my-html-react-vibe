@@ -27,231 +27,256 @@ export interface HotspotActiveUser {
 
 export class MikroTikAPI {
   private connection: MikroTikConnection;
+  private apiUrl: string;
 
-  constructor(connection: MikroTikConnection) {
+  constructor(connection: MikroTikConnection, apiUrl: string = 'http://localhost:3001/api/mikrotik') {
     this.connection = connection;
+    this.apiUrl = apiUrl;
   }
 
-  // Test connection to the router
+  // Test connection to the router via backend API
   async testConnection(): Promise<boolean> {
     try {
-      console.log(`Testing connection to ${this.connection.ip}:${this.connection.port}`);
+      console.log(`Testing connection to ${this.connection.ip}:${this.connection.port} via backend`);
       
-      // Test multiple connection methods
-      const connectionMethods = [
-        { name: 'HTTP REST API', method: () => this.testRestAPI(false) },
-        { name: 'HTTPS REST API', method: () => this.testRestAPI(true) },
-        { name: 'HTTP API (8728)', method: () => this.testHTTPAPI() },
-        { name: 'Winbox API (8291)', method: () => this.testWinboxAPI() }
-      ];
-
-      for (const { name, method } of connectionMethods) {
-        try {
-          console.log(`Trying ${name}...`);
-          const result = await method();
-          if (result) {
-            console.log(`✅ Connection successful with ${name}`);
-            return true;
-          }
-        } catch (error) {
-          console.log(`❌ ${name} failed:`, error.message);
-        }
-      }
-
-      console.log('❌ All connection methods failed');
-      return false;
-    } catch (error) {
-      console.error('Connection test failed:', error);
-      return false;
-    }
-  }
-
-  // Test REST API connection (RouterOS v7+)
-  private async testRestAPI(useHttps: boolean = true): Promise<boolean> {
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-      const protocol = useHttps ? 'https' : 'http';
-      const port = useHttps ? '' : `:${this.connection.port || 80}`;
-      
-      const response = await fetch(`${protocol}://${this.connection.ip}${port}/rest/system/identity`, {
-        method: 'GET',
+      const response = await fetch(`${this.apiUrl}/connect`, {
+        method: 'POST',
         headers: {
-          'Authorization': `Basic ${btoa(`${this.connection.username}:${this.connection.password}`)}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
-        signal: controller.signal
+        body: JSON.stringify({
+          ip: this.connection.ip,
+          port: this.connection.port,
+          username: this.connection.username,
+          password: this.connection.password,
+          connectionType: 'auto',
+          timeout: 10000
+        })
       });
 
-      clearTimeout(timeoutId);
-      return response.ok;
+      const result = await response.json();
+      
+      if (result.success) {
+        console.log('✅ Connection successful via backend API');
+        return true;
+      } else {
+        console.log('❌ Connection failed:', result.message);
+        return false;
+      }
     } catch (error) {
-      if (error.name === 'AbortError') {
-        throw new Error('Connection timeout');
-      }
-      throw error;
-    }
-  }
-
-  // Test HTTP API connection (port 8728/8729)
-  private async testHTTPAPI(): Promise<boolean> {
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-      // Try common MikroTik API ports
-      const ports = [8728, 8729];
-      
-      for (const port of ports) {
-        try {
-          const response = await fetch(`http://${this.connection.ip}:${port}/`, {
-            method: 'GET',
-            headers: {
-              'Authorization': `Basic ${btoa(`${this.connection.username}:${this.connection.password}`)}`
-            },
-            signal: controller.signal
-          });
-          
-          clearTimeout(timeoutId);
-          if (response.status !== 0) { // Any response indicates the port is accessible
-            return true;
-          }
-        } catch (portError) {
-          console.log(`Port ${port} not accessible`);
-        }
-      }
-      
+      console.error('Backend API connection test failed:', error);
       return false;
-    } catch (error) {
-      if (error.name === 'AbortError') {
-        throw new Error('Connection timeout');
+    }
+  }
+
+  // Execute custom command via backend API
+  async executeCommand(command: string, params: any = {}): Promise<any> {
+    try {
+      const response = await fetch(`${this.apiUrl}/command`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ip: this.connection.ip,
+          port: this.connection.port,
+          username: this.connection.username,
+          password: this.connection.password,
+          command,
+          params
+        })
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        return result.data.result;
+      } else {
+        throw new Error(result.message || 'Command execution failed');
       }
+    } catch (error) {
+      console.error('Failed to execute command:', error);
       throw error;
     }
   }
 
-  // Test Winbox API connection (port 8291)
-  private async testWinboxAPI(): Promise<boolean> {
-    try {
-      // Try to connect to Winbox port
-      const response = await fetch(`http://${this.connection.ip}:8291/`, {
-        method: 'HEAD',
-        mode: 'no-cors'
-      });
-      return true; // If no error thrown, connection exists
-    } catch (error) {
-      throw new Error('Winbox API not accessible');
-    }
-  }
-
-  // Test SSH connection (port 22)
-  private async testSSHConnection(): Promise<boolean> {
-    try {
-      // Since we can't do SSH directly from browser, we'll test if port is open
-      const response = await fetch(`http://${this.connection.ip}:22/`, {
-        method: 'HEAD',
-        mode: 'no-cors'
-      });
-      return true;
-    } catch (error) {
-      throw new Error('SSH not accessible');
-    }
-  }
-
-  // Get router system information
+  // Get router system information via backend API
   async getSystemInfo(): Promise<any> {
     try {
-      // Try both HTTP and HTTPS
-      const protocols = ['http', 'https'];
-      
-      for (const protocol of protocols) {
-        try {
-          const port = protocol === 'https' ? '' : `:${this.connection.port || 80}`;
-          const response = await fetch(`${protocol}://${this.connection.ip}${port}/rest/system/identity`, {
-            method: 'GET',
-            headers: {
-              'Authorization': `Basic ${btoa(`${this.connection.username}:${this.connection.password}`)}`,
-              'Content-Type': 'application/json'
-            }
-          });
+      const response = await fetch(`${this.apiUrl}/identity`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ip: this.connection.ip,
+          port: this.connection.port,
+          username: this.connection.username,
+          password: this.connection.password
+        })
+      });
 
-          if (response.ok) {
-            const data = await response.json();
-            console.log(`✅ System info fetched via ${protocol.toUpperCase()}`);
-            return data;
-          }
-        } catch (protocolError) {
-          console.log(`Failed to fetch system info via ${protocol.toUpperCase()}:`, protocolError.message);
-        }
-      }
+      const result = await response.json();
       
-      throw new Error('All system info fetch methods failed');
+      if (result.success) {
+        console.log('✅ System info fetched via backend API');
+        return result.data;
+      } else {
+        throw new Error(result.message || 'Failed to get system info');
+      }
     } catch (error) {
-      console.error('Failed to get system info:', error);
-      // Return mock data if real connection fails
+      console.error('Failed to get system info via backend:', error);
+      // Return mock data if backend connection fails
       return {
-        identity: 'MikroTik Router (Connection Failed)',
-        version: '7.0',
-        'board-name': 'Unknown',
+        identity: { name: 'MikroTik Router (Backend Connection Failed)' },
+        resource: { version: '7.0', 'board-name': 'Unknown' },
         connectionStatus: 'failed'
       };
     }
   }
 
-  // Create hotspot user (voucher)
+  // Create hotspot user (voucher) via backend API
   async createHotspotUser(user: HotspotUser): Promise<string> {
     try {
-      // In real implementation, this would create the user via API
-      console.log('Creating hotspot user:', user);
-      return 'user-id-generated';
+      const response = await fetch(`${this.apiUrl}/hotspot/users/create`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ip: this.connection.ip,
+          port: this.connection.port,
+          username: this.connection.username,
+          password: this.connection.password,
+          user
+        })
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        console.log('✅ Hotspot user created successfully');
+        return result.data.result;
+      } else {
+        throw new Error(result.message || 'Failed to create hotspot user');
+      }
     } catch (error) {
       console.error('Failed to create hotspot user:', error);
       throw error;
     }
   }
 
-  // Get active hotspot users
+  // Get active hotspot users via backend API
   async getActiveUsers(): Promise<HotspotActiveUser[]> {
     try {
-      // Simulate getting active users
-      return [];
+      const response = await fetch(`${this.apiUrl}/command`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ip: this.connection.ip,
+          port: this.connection.port,
+          username: this.connection.username,
+          password: this.connection.password,
+          command: '/ip/hotspot/active/print'
+        })
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        return result.data.result || [];
+      } else {
+        throw new Error(result.message || 'Failed to get active users');
+      }
     } catch (error) {
       console.error('Failed to get active users:', error);
-      throw error;
+      return [];
     }
   }
 
-  // Remove hotspot user
+  // Remove hotspot user via backend API
   async removeHotspotUser(userId: string): Promise<boolean> {
     try {
-      console.log('Removing hotspot user:', userId);
-      return true;
+      const response = await fetch(`${this.apiUrl}/command`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ip: this.connection.ip,
+          port: this.connection.port,
+          username: this.connection.username,
+          password: this.connection.password,
+          command: '/ip/hotspot/user/remove',
+          params: { numbers: userId }
+        })
+      });
+
+      const result = await response.json();
+      return result.success;
     } catch (error) {
       console.error('Failed to remove hotspot user:', error);
-      throw error;
+      return false;
     }
   }
 
-  // Get hotspot users
+  // Get hotspot users via backend API
   async getHotspotUsers(): Promise<HotspotUser[]> {
     try {
-      // Simulate getting hotspot users
-      return [];
+      const response = await fetch(`${this.apiUrl}/hotspot/users`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ip: this.connection.ip,
+          port: this.connection.port,
+          username: this.connection.username,
+          password: this.connection.password
+        })
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        return result.data || [];
+      } else {
+        throw new Error(result.message || 'Failed to get hotspot users');
+      }
     } catch (error) {
       console.error('Failed to get hotspot users:', error);
-      throw error;
+      return [];
     }
   }
 
-  // Enable/disable hotspot
+  // Enable/disable hotspot via backend API
   async setHotspotStatus(interfaceName: string, enabled: boolean): Promise<boolean> {
     try {
-      console.log(`${enabled ? 'Enabling' : 'Disabling'} hotspot on interface ${interfaceName}`);
-      return true;
+      const command = enabled ? '/ip/hotspot/add' : '/ip/hotspot/remove';
+      const params = enabled ? { interface: interfaceName } : { numbers: interfaceName };
+
+      const response = await fetch(`${this.apiUrl}/command`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ip: this.connection.ip,
+          port: this.connection.port,
+          username: this.connection.username,
+          password: this.connection.password,
+          command,
+          params
+        })
+      });
+
+      const result = await response.json();
+      return result.success;
     } catch (error) {
       console.error('Failed to set hotspot status:', error);
-      throw error;
+      return false;
     }
   }
 }
