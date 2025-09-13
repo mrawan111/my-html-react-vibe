@@ -35,25 +35,30 @@ export class MikroTikAPI {
   // Test connection to the router
   async testConnection(): Promise<boolean> {
     try {
+      console.log(`Testing connection to ${this.connection.ip}:${this.connection.port}`);
+      
       // Test multiple connection methods
       const connectionMethods = [
-        () => this.testRestAPI(),
-        () => this.testWinboxAPI(),
-        () => this.testSSHConnection()
+        { name: 'HTTP REST API', method: () => this.testRestAPI(false) },
+        { name: 'HTTPS REST API', method: () => this.testRestAPI(true) },
+        { name: 'HTTP API (8728)', method: () => this.testHTTPAPI() },
+        { name: 'Winbox API (8291)', method: () => this.testWinboxAPI() }
       ];
 
-      for (const method of connectionMethods) {
+      for (const { name, method } of connectionMethods) {
         try {
+          console.log(`Trying ${name}...`);
           const result = await method();
           if (result) {
-            console.log('Connection successful with method');
+            console.log(`✅ Connection successful with ${name}`);
             return true;
           }
         } catch (error) {
-          console.log('Method failed, trying next:', error.message);
+          console.log(`❌ ${name} failed:`, error.message);
         }
       }
 
+      console.log('❌ All connection methods failed');
       return false;
     } catch (error) {
       console.error('Connection test failed:', error);
@@ -62,12 +67,15 @@ export class MikroTikAPI {
   }
 
   // Test REST API connection (RouterOS v7+)
-  private async testRestAPI(): Promise<boolean> {
+  private async testRestAPI(useHttps: boolean = true): Promise<boolean> {
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-      const response = await fetch(`https://${this.connection.ip}/rest/system/identity`, {
+      const protocol = useHttps ? 'https' : 'http';
+      const port = useHttps ? '' : `:${this.connection.port || 80}`;
+      
+      const response = await fetch(`${protocol}://${this.connection.ip}${port}/rest/system/identity`, {
         method: 'GET',
         headers: {
           'Authorization': `Basic ${btoa(`${this.connection.username}:${this.connection.password}`)}`,
@@ -78,6 +86,43 @@ export class MikroTikAPI {
 
       clearTimeout(timeoutId);
       return response.ok;
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        throw new Error('Connection timeout');
+      }
+      throw error;
+    }
+  }
+
+  // Test HTTP API connection (port 8728/8729)
+  private async testHTTPAPI(): Promise<boolean> {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+      // Try common MikroTik API ports
+      const ports = [8728, 8729];
+      
+      for (const port of ports) {
+        try {
+          const response = await fetch(`http://${this.connection.ip}:${port}/`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Basic ${btoa(`${this.connection.username}:${this.connection.password}`)}`
+            },
+            signal: controller.signal
+          });
+          
+          clearTimeout(timeoutId);
+          if (response.status !== 0) { // Any response indicates the port is accessible
+            return true;
+          }
+        } catch (portError) {
+          console.log(`Port ${port} not accessible`);
+        }
+      }
+      
+      return false;
     } catch (error) {
       if (error.name === 'AbortError') {
         throw new Error('Connection timeout');
@@ -117,27 +162,39 @@ export class MikroTikAPI {
   // Get router system information
   async getSystemInfo(): Promise<any> {
     try {
-      const response = await fetch(`https://${this.connection.ip}/rest/system/identity`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Basic ${btoa(`${this.connection.username}:${this.connection.password}`)}`,
-          'Content-Type': 'application/json'
+      // Try both HTTP and HTTPS
+      const protocols = ['http', 'https'];
+      
+      for (const protocol of protocols) {
+        try {
+          const port = protocol === 'https' ? '' : `:${this.connection.port || 80}`;
+          const response = await fetch(`${protocol}://${this.connection.ip}${port}/rest/system/identity`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Basic ${btoa(`${this.connection.username}:${this.connection.password}`)}`,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            console.log(`✅ System info fetched via ${protocol.toUpperCase()}`);
+            return data;
+          }
+        } catch (protocolError) {
+          console.log(`Failed to fetch system info via ${protocol.toUpperCase()}:`, protocolError.message);
         }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch system info');
       }
-
-      const data = await response.json();
-      return data;
+      
+      throw new Error('All system info fetch methods failed');
     } catch (error) {
       console.error('Failed to get system info:', error);
       // Return mock data if real connection fails
       return {
-        identity: 'MikroTik Router',
+        identity: 'MikroTik Router (Connection Failed)',
         version: '7.0',
-        'board-name': 'Unknown'
+        'board-name': 'Unknown',
+        connectionStatus: 'failed'
       };
     }
   }
