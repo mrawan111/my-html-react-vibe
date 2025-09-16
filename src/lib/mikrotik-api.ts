@@ -239,7 +239,7 @@ export class MikroTikAPI {
       });
 
       const result = await response.json();
-      
+
       if (result.success) {
         return result.data || [];
       } else {
@@ -248,6 +248,32 @@ export class MikroTikAPI {
     } catch (error) {
       console.error('Failed to get hotspot users:', error);
       return [];
+    }
+  }
+
+  // Update hotspot user via backend API
+  async updateHotspotUser(userId: string, updates: Partial<HotspotUser>): Promise<boolean> {
+    try {
+      const response = await fetch(`${this.apiUrl}/command`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ip: this.connection.ip,
+          port: this.connection.port,
+          username: this.connection.username,
+          password: this.connection.password,
+          command: '/ip/hotspot/user/set',
+          params: { numbers: userId, ...updates }
+        })
+      });
+
+      const result = await response.json();
+      return result.success;
+    } catch (error) {
+      console.error('Failed to update hotspot user:', error);
+      return false;
     }
   }
 

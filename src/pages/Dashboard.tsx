@@ -1,13 +1,15 @@
+
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
   ResponsiveContainer,
   LineChart,
   Line,
@@ -21,82 +23,80 @@ import { TrendingUp, TrendingDown, Users, Wifi, DollarSign, Activity, AlertTrian
 import { useVouchers } from "@/hooks/useVouchers";
 import { useRouters } from "@/hooks/useRouters";
 import { useSalesStats } from "@/hooks/useSales";
+import { useUsers} from "@/hooks/useUsers";
 import { useWeeklyStats, useMonthlyStats } from "@/hooks/useDailyStats";
-import { useActiveUsers } from "@/hooks/useUsageLogs";
+import { useActiveUsers, ActiveUser } from "@/hooks/useUsageLogs";
+import { SalesStats } from "@/hooks/useSales";
 import { useMemo } from "react";
 
-const weeklyUsageData = [
-  { name: "السبت", value: 45, sales: 12 },
-  { name: "الأحد", value: 52, sales: 19 },
-  { name: "الاثنين", value: 48, sales: 15 },
-  { name: "الثلاثاء", value: 61, sales: 23 },
-  { name: "الأربعاء", value: 55, sales: 18 },
-  { name: "الخميس", value: 67, sales: 25 },
-  { name: "الجمعة", value: 43, sales: 14 }
-];
-
-const salesTrendData = [
-  { month: "يناير", sales: 150, revenue: 4500 },
-  { month: "فبراير", sales: 180, revenue: 5400 },
-  { month: "مارس", sales: 220, revenue: 6600 },
-  { month: "أبريل", sales: 190, revenue: 5700 },
-  { month: "مايو", sales: 240, revenue: 7200 },
-  { month: "يونيو", sales: 280, revenue: 8400 }
-];
-
-const cardStatusData = [
-  { name: "نشط", value: 450, color: "#4CAF50" },
-  { name: "منتهي", value: 120, color: "#ff3366" },
-  { name: "غير مستخدم", value: 230, color: "#ff7700" }
-];
-
-const activeUsersData = [
-  {
-    cardNumber: "KT-1001",
-    macAddress: "62-25-81-5B-D8-4F",
-    startTime: "منذ 29 دقيقة",
-    data: "36.79",
-    status: "نشط"
-  },
-  {
-    cardNumber: "KT-1002", 
-    macAddress: "A4-B2-39-7C-1E-8D",
-    startTime: "منذ 45 دقيقة",
-    data: "128.45",
-    status: "نشط"
-  },
-  {
-    cardNumber: "KT-1003",
-    macAddress: "F8-32-E4-91-6A-2B", 
-    startTime: "منذ ساعة",
-    data: "89.23",
-    status: "نشط"
-  }
-];
 
 export default function Dashboard() {
   const { data: routers = [] } = useRouters();
   const { data: vouchers = [] } = useVouchers();
+  const { data: salesStats = [] } = useSalesStats();
+  const { data: weeklyStats = [] } = useWeeklyStats();
+  const { data: monthlyStats = [] } = useMonthlyStats();
+  const { data: activeUsersData = [] } = useActiveUsers() as { data: ActiveUser[] };
 
+  // Calculate voucher status counts for cardStatusData
+  const cardStatusData = useMemo(() => {
+    const statusCounts = { active: 0, expired: 0, unused: 0, suspended: 0 };
+    vouchers.forEach(v => {
+      if (v.status === "active") statusCounts.active++;
+      else if (v.status === "expired") statusCounts.expired++;
+      else if (v.status === "unused") statusCounts.unused++;
+      else if (v.status === "suspended") statusCounts.suspended++;
+    });
+    return [
+      { name: "نشط", value: statusCounts.active, color: "#4CAF50" },
+      { name: "منتهي", value: statusCounts.expired, color: "#ff3366" },
+      { name: "غير مستخدم", value: statusCounts.unused, color: "#ff7700" },
+      { name: "مباع", value: statusCounts.suspended, color: "#8884d8" }
+    ];
+  }, [vouchers]);
+
+  // Prepare weekly usage data from weeklyStats
+  const weeklyUsageData = useMemo(() => {
+    return weeklyStats.length > 0 ? weeklyStats : [];
+  }, [weeklyStats]);
+
+  // Prepare sales trend data from monthlyStats
+  const salesTrendData = useMemo(() => {
+    return monthlyStats.length > 0 ? monthlyStats : [];
+  }, [monthlyStats]);
+
+  // Calculate dashboard stats dynamically
   const dashboardStats = useMemo(() => {
-    const activeVouchers = vouchers.filter(v => v.status === 'active').length;
-    const totalRevenue = vouchers.filter(v => v.status !== 'unused').length * 30; // Assuming avg 30 per voucher
-    const todayVouchers = vouchers.filter(v => {
-      const today = new Date().toDateString();
-      return new Date(v.created_at).toDateString() === today;
-    }).length;
-    const monthlyVouchers = vouchers.filter(v => {
-      const thisMonth = new Date().getMonth();
-      return new Date(v.created_at).getMonth() === thisMonth;
-    }).length;
+    // Calculate total revenue from vouchers
+    const totalRevenue = vouchers.reduce((sum, voucher) => {
+      return sum + (voucher.voucher_packages?.price || 0);
+    }, 0);
+
+    // Calculate today's sales from vouchers created today
+    const today = new Date().toDateString();
+    const todaySales = vouchers.filter(v => new Date(v.created_at).toDateString() === today).length;
+
+    // Active users count
+    const activeUsersCount = Users.length;
+
+    // Sold (exported) vouchers count
+    const soldVouchersCount = vouchers.length;
+
+    // Monthly sales: total revenue from vouchers created in the last month
+    const lastMonth = new Date();
+    lastMonth.setMonth(lastMonth.getMonth() - 1);
+    const monthlySales = vouchers
+      .filter(v => new Date(v.created_at) >= lastMonth)
+      .reduce((sum, voucher) => sum + (voucher.voucher_packages?.price || 0), 0);
 
     return {
       balance: totalRevenue,
-      todaySales: todayVouchers,
-      activeUsers: activeVouchers,
-      monthlySales: monthlyVouchers
+      todaySales: todaySales,
+      activeUsers: activeUsersCount,
+      soldVouchers: soldVouchersCount,
+      monthlySales: monthlySales,
     };
-  }, [vouchers]);
+  }, [vouchers, salesStats]);
 
   return (
     <div className="flex-1 px-6 pt-6 space-y-6 overflow-auto bg-background min-h-screen">
@@ -113,10 +113,6 @@ export default function Dashboard() {
               <div>
                 <div className="text-muted-foreground text-sm mb-1">الرصيد المتاح</div>
                 <div className="text-foreground text-3xl font-semibold">{dashboardStats.balance.toLocaleString()}</div>
-                <div className="text-success text-xs mt-1 flex items-center">
-                  <TrendingUp className="h-3 w-3 mr-1" />
-                  +12.5% من الأمس
-                </div>
               </div>
               <div className="p-3 bg-primary/20 rounded-full">
                 <DollarSign className="h-8 w-8 text-primary" />
@@ -164,13 +160,27 @@ export default function Dashboard() {
               <div>
                 <div className="text-muted-foreground text-sm mb-1">إجمالي مبيعات الشهر</div>
                 <div className="text-foreground text-3xl font-semibold">{dashboardStats.monthlySales}</div>
-                <div className="text-warning text-xs mt-1 flex items-center">
-                  <TrendingDown className="h-3 w-3 mr-1" />
-                  -3.2% من الشهر الماضي
-                </div>
               </div>
               <div className="p-3 bg-warning/20 rounded-full">
                 <BarChart className="h-8 w-8 text-warning" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="kayantech-card border-border group">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-muted-foreground text-sm mb-1">إجمالي الكروت المصدرة</div>
+                <div className="text-foreground text-3xl font-semibold">{dashboardStats.soldVouchers.toLocaleString()}</div>
+                <div className="text-success text-xs mt-1 flex items-center">
+                  <CheckCircle className="h-3 w-3 mr-1" />
+                  تم تصديرها
+                </div>
+              </div>
+              <div className="p-3 bg-success/20 rounded-full">
+                <CheckCircle className="h-8 w-8 text-success" />
               </div>
             </div>
           </CardContent>
@@ -192,12 +202,12 @@ export default function Dashboard() {
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={salesTrendData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis 
-                    dataKey="month" 
+                  <XAxis
+                    dataKey="month"
                     stroke="hsl(var(--muted-foreground))"
                     fontSize={12}
                   />
-                  <YAxis 
+                  <YAxis
                     stroke="hsl(var(--muted-foreground))"
                     fontSize={12}
                   />
@@ -209,9 +219,9 @@ export default function Dashboard() {
                       color: "hsl(var(--foreground))"
                     }}
                   />
-                  <Area 
+                  <Area
                     type="monotone"
-                    dataKey="sales" 
+                    dataKey="sales"
                     stroke="hsl(var(--primary))"
                     fill="hsl(var(--primary) / 0.2)"
                     strokeWidth={2}
@@ -297,15 +307,15 @@ export default function Dashboard() {
           <CardContent className="space-y-3">
             <div className="flex items-center justify-between p-3 bg-success/10 rounded-lg">
               <span className="text-sm">إجمالي الكروت المباعة</span>
-              <span className="font-bold text-success">1,847</span>
+              <span className="font-bold text-success">{vouchers.length.toLocaleString()}</span>
             </div>
             <div className="flex items-center justify-between p-3 bg-primary/10 rounded-lg">
               <span className="text-sm">متوسط الاستخدام اليومي</span>
-              <span className="font-bold text-primary">67.5 GB</span>
+              <span className="font-bold text-primary">{weeklyUsageData.length > 0 ? weeklyUsageData.reduce((acc, item) => acc + item.value, 0) / weeklyUsageData.length : 0} GB</span>
             </div>
             <div className="flex items-center justify-between p-3 bg-info/10 rounded-lg">
               <span className="text-sm">نسبة الاستخدام</span>
-              <span className="font-bold text-info">78.9%</span>
+              <span className="font-bold text-info">{weeklyUsageData.length > 0 ? ((weeklyUsageData.reduce((acc, item) => acc + item.value, 0) / (weeklyUsageData.length * 100)) * 100).toFixed(1) : 0}%</span>
             </div>
           </CardContent>
         </Card>
@@ -354,8 +364,8 @@ export default function Dashboard() {
             </table>
           </div>
           <div className="flex justify-center py-4">
-            <select 
-              aria-label="Select number" 
+            <select
+              aria-label="Select number"
               className="bg-input rounded-lg text-foreground font-semibold px-4 py-2 border border-border hover:border-primary focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer transition-all duration-200"
             >
               <option>10</option>
@@ -377,15 +387,15 @@ export default function Dashboard() {
         <CardContent>
           <div className="chart-container">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={weeklyUsageData} barCategoryGap="20%">
+                <BarChart data={weeklyUsageData} barCategoryGap="20%">
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis 
-                  dataKey="name" 
+                <XAxis
+                  dataKey="name"
                   stroke="hsl(var(--muted-foreground))"
                   fontSize={12}
                   tick={{ fill: "hsl(var(--muted-foreground))" }}
                 />
-                <YAxis 
+                <YAxis
                   stroke="hsl(var(--muted-foreground))"
                   fontSize={12}
                   tick={{ fill: "hsl(var(--muted-foreground))" }}
@@ -403,14 +413,14 @@ export default function Dashboard() {
                     name === 'value' ? 'الاستخدام' : 'المبيعات'
                   ]}
                 />
-                <Bar 
-                  dataKey="value" 
+                <Bar
+                  dataKey="value"
                   fill="hsl(var(--primary))"
                   radius={[4, 4, 0, 0]}
                   name="value"
                 />
-                <Bar 
-                  dataKey="sales" 
+                <Bar
+                  dataKey="sales"
                   fill="hsl(var(--success))"
                   radius={[4, 4, 0, 0]}
                   name="sales"

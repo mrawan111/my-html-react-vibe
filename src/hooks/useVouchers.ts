@@ -31,6 +31,10 @@ export interface Voucher {
   created_by?: string;
   created_at: string;
   updated_at: string;
+  voucher_packages: {
+    name: string;
+    price: number;
+  };
 }
 
 export const useVoucherPackages = () => {
@@ -49,19 +53,47 @@ export const useVoucherPackages = () => {
   });
 };
 
-export const useVouchers = (routerId?: string) => {
+async function createMikroTikConnection(routerId: string): Promise<MikroTikConnection> {
+  if (!routerId) {
+    throw new Error("Router ID is required to create MikroTik connection");
+  }
+
+  // Fetch router credentials from Supabase
+  const { data: router, error } = await supabase
+    .from("routers")
+    .select("ip_address, api_username, api_password, api_port")
+    .eq("id", routerId)
+    .single();
+
+  if (error) {
+    throw new Error(`Failed to fetch router credentials: ${error.message}`);
+  }
+
+  if (!router.ip_address || !router.api_username || !router.api_password) {
+    throw new Error("Router credentials are incomplete");
+  }
+
+  return {
+    ip: router.ip_address as string,
+    port: Number(router.api_port) || 8728,
+    username: router.api_username as string,
+    password: router.api_password as string
+  };
+}
+
+export const useVouchers = () => {
   return useQuery({
-    queryKey: ["vouchers", routerId],
+    queryKey: ["vouchers"],
     queryFn: async () => {
-      let query = supabase
+      const { data, error } = await supabase
         .from("vouchers")
-        .select("*");
-      
-      if (routerId) {
-        query = query.eq("router_id", routerId);
-      }
-      
-      const { data, error } = await query.order("created_at", { ascending: false });
+        .select(`
+          *,
+          voucher_packages (
+            name,
+            price
+          )
+        `);
 
       if (error) throw error;
       return data as Voucher[];
@@ -84,54 +116,73 @@ export const useCreateVouchers = () => {
       quantity?: number;
       autoGenerate?: boolean;
     }) => {
-      console.log("Creating vouchers with params:", { packageId, routerId, quantity });
-      
-      // Get package details
+      if (!routerId) {
+        throw new Error("Router ID is required to create vouchers in MikroTik");
+      }
+
+      // Get package details from Supabase
       const { data: packageData, error: packageError } = await supabase
         .from("voucher_packages")
         .select("*")
         .eq("id", packageId)
         .single();
 
-      console.log("Package data:", packageData);
       if (packageError) {
-        console.error("Package error:", packageError);
         throw packageError;
       }
 
-      const vouchers = [];
-      
+      const connection = await createMikroTikConnection(routerId);
+      const api = new MikroTikAPI(connection);
+
+      const createdVouchers = [];
+
       for (let i = 0; i < quantity; i++) {
         const code = autoGenerate ? generateVoucherCode() : `VOUCHER-${Date.now()}-${i}`;
-        
-        // Calculate expiry date
-        let expiresAt = null;
-        if (packageData.duration_days) {
-          const now = new Date();
-          const totalMinutes = (packageData.duration_days || 0) * 24 * 60;
-          expiresAt = new Date(now.getTime() + totalMinutes * 60 * 1000).toISOString();
+
+        // Calculate expiry date string for MikroTik limit-uptime
+        let limitUptime = undefined;
+        const totalMinutes =
+          (packageData.duration_days || 0) * 24 * 60 +
+          (packageData.duration_hours || 0) * 60 +
+          (packageData.duration_minutes || 0);
+
+        if (totalMinutes > 0) {
+          limitUptime = `${totalMinutes}m`;
         }
 
-        const voucher = {
-          code,
-          package_id: packageId,
-          router_id: routerId,
-          status: 'unused' as const,
-          expires_at: expiresAt,
-          remaining_data_gb: null, // Will be set based on package type
-          remaining_time_minutes: (packageData.duration_days || 0) * 24 * 60 || null
+        const hotspotUser: HotspotUser = {
+          name: code,
+          password: code,
+          'limit-uptime': limitUptime,
+          'limit-bytes-in': packageData.data_limit_gb ? packageData.data_limit_gb * 1024 * 1024 * 1024 : undefined,
+          'limit-bytes-out': packageData.data_limit_gb ? packageData.data_limit_gb * 1024 * 1024 * 1024 : undefined,
+          disabled: false
         };
 
-        vouchers.push(voucher);
+        await api.createHotspotUser(hotspotUser);
+
+        // Optionally insert voucher record in Supabase for tracking
+        const { data, error } = await supabase
+          .from("vouchers")
+          .insert([{
+            code,
+            package_id: packageId,
+            router_id: routerId,
+            status: 'unused',
+            expires_at: null,
+            remaining_data_gb: packageData.data_limit_gb || null,
+            remaining_time_minutes: (packageData.duration_days || 0) * 24 * 60 || null
+          }])
+          .select();
+
+        if (error) {
+          throw error;
+        }
+
+        createdVouchers.push(data[0]);
       }
 
-      const { data, error } = await supabase
-        .from("vouchers")
-        .insert(vouchers)
-        .select();
-
-      if (error) throw error;
-      return data;
+      return createdVouchers;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["vouchers"] });
@@ -392,6 +443,37 @@ export const useUpdateVoucherStatus = () => {
     },
   });
 };
+
+// Helper function to parse MikroTik time format to minutes
+function parseMikroTikTimeToMinutes(timeStr: string): number | undefined {
+  if (!timeStr) return undefined;
+
+  // If it's already a number string like "480", parse it
+  const numMatch = timeStr.match(/^(\d+)$/);
+  if (numMatch) {
+    return parseInt(numMatch[1]);
+  }
+
+  // Parse MikroTik format like "1d2h30m"
+  const regex = /(\d+)d|(\d+)h|(\d+)m|(\d+)s/g;
+  let totalMinutes = 0;
+  let match;
+
+  while ((match = regex.exec(timeStr)) !== null) {
+    const value = parseInt(match[0]);
+    if (match[0].includes('d')) {
+      totalMinutes += value * 24 * 60;
+    } else if (match[0].includes('h')) {
+      totalMinutes += value * 60;
+    } else if (match[0].includes('m')) {
+      totalMinutes += value;
+    } else if (match[0].includes('s')) {
+      totalMinutes += Math.ceil(value / 60);
+    }
+  }
+
+  return totalMinutes > 0 ? totalMinutes : undefined;
+}
 
 // Helper function to generate voucher codes (numbers only)
 function generateVoucherCode(): string {

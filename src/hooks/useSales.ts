@@ -41,8 +41,16 @@ export const useSales = (routerId?: string, dateRange?: { start: string; end: st
   });
 };
 
+export interface SalesStats {
+  cloudName: string;
+  placeName: string;
+  dailySales: number;
+  weeklySales: number;
+  monthlySales: number;
+}
+
 export const useSalesStats = (routerId?: string) => {
-  return useQuery({
+  return useQuery<SalesStats[]>({
     queryKey: ["sales-stats", routerId],
     queryFn: async () => {
       let query = supabase
@@ -62,7 +70,7 @@ export const useSalesStats = (routerId?: string) => {
       if (error) throw error;
 
       // Group by router and calculate daily, weekly, monthly stats
-      const routerStats = data.reduce((acc: any, sale: any) => {
+      const routerStats: Record<string, SalesStats> = data.reduce((acc: Record<string, SalesStats>, sale: any) => {
         const routerName = sale.routers?.router_name || "غير محدد";
         const location = sale.routers?.location || "غير محدد";
         const saleDate = new Date(sale.sold_at);

@@ -40,6 +40,22 @@ export default function VoucherCards() {
   const sellVoucherMutation = useSellVoucher();
   const deleteVoucherMutation = useDeleteVoucher();
   const updateVoucherStatusMutation = useUpdateVoucherStatus();
+// Helper function to format remaining time
+
+function formatRemainingTimeFromMinutes(totalMinutes: number): string {
+  if (totalMinutes <= 0) return "منتهي";
+
+  const days = Math.floor(totalMinutes / (24 * 60));
+  const hours = Math.floor((totalMinutes % (24 * 60)) / 60);
+  const minutes = Math.floor(totalMinutes % 60);
+
+  const parts = [];
+  if (days > 0) parts.push(`${days} يوم`);
+  if (hours > 0) parts.push(`${hours} ساعة`);
+  if (minutes > 0) parts.push(`${minutes} دقيقة`);
+
+  return parts.join(' و ');
+}
 
   const getStatusBadge = (status: string) => {
     const variants = {
@@ -589,14 +605,47 @@ const exportSelectedVouchersToPDF = async (voucherData?: any[]): Promise<Blob | 
                   <Select value={selectedPackage} onValueChange={setSelectedPackage}>
                     <SelectTrigger>
                       <SelectValue placeholder="اختر الباقة" />
+                      
                     </SelectTrigger>
                     <SelectContent>
-                      {packages?.map((pkg) => (
-                        <SelectItem key={pkg.id} value={pkg.id}>
-                          {pkg.name} - {pkg.price} جنيه
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
+              {packages
+  ?.filter((pkg) =>
+    [
+      "0695e968-ae70-4a23-a86a-eec7ef07af0e",
+      "5b396187-1dde-48ca-bf99-b72acaa7ec87", 
+      "6b7407e5-43d9-4fd1-a286-6534e939abf8",
+      "943e4eed-53c5-48e3-9734-e7fcfcbe253c"
+    ].includes(pkg.id)
+  )
+  .map((pkg) => {
+    // Fix the duration calculation
+    let durationText = '';
+    if (pkg.duration_days) {
+      durationText = `${pkg.duration_days} يوم`;
+    } else if (pkg.duration_hours) {
+      durationText = `${pkg.duration_hours} ساعة`;
+    } else if (pkg.duration_minutes) {
+      durationText = `${pkg.duration_minutes} دقيقة`;
+    } else {
+      durationText = 'غير محدد';
+    }
+
+    const dataText = pkg.data_limit_gb
+      ? `${pkg.data_limit_gb} جيجا`
+      : 'غير محدود';
+
+    return (
+      <SelectItem key={pkg.id} value={pkg.id}>
+        <div className="flex flex-col">
+          <span className="font-medium">{pkg.name}</span>
+          <span className="text-sm text-muted-foreground">
+            {pkg.price} جنيه • {dataText} • {durationText}
+          </span>
+        </div>
+      </SelectItem>
+    );
+  })}
+        </SelectContent>
                   </Select>
                   </div>
 
@@ -801,94 +850,95 @@ const exportSelectedVouchersToPDF = async (voucherData?: any[]): Promise<Blob | 
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {vouchers?.map((voucher) => (
-                      <TableRow key={voucher.id}>
-                        <TableCell>
-                          <input
-                            type="checkbox"
-                            checked={selectedVouchersForPrint.has(voucher.id)}
-                            onChange={() => toggleVoucherSelection(voucher.id)}
-                          />
-                        </TableCell>
-                        <TableCell className="font-mono font-medium">
-                          {voucher.code}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="checkbox"
-                              checked={voucher.status === 'suspended'}
-                              onChange={() => {
-                                if (voucher.status === 'unused' || voucher.status === 'suspended') {
-                                  handleStatusToggle(voucher.id, voucher.status);
-                                }
-                              }}
-                              disabled={updateVoucherStatusMutation.isPending || (voucher.status !== 'unused' && voucher.status !== 'suspended')}
-                              className="ml-2"
-                            />
-                            {getStatusBadge(voucher.status)}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {packages?.find(p => p.id === voucher.package_id)?.name || 'باقة'}
-                        </TableCell>
-                        <TableCell>
-                          {new Date(voucher.created_at).toLocaleDateString('ar-EG')}
-                        </TableCell>
-                        <TableCell>
-                          {voucher.used_at ?
-                            new Date(voucher.used_at).toLocaleDateString('ar-EG') :
-                            '-'
-                          }
-                        </TableCell>
-                        <TableCell>
-                          {voucher.used_by || '-'}
-                        </TableCell>
-                        <TableCell>
-                          {voucher.remaining_time_minutes ?
-                            `${voucher.remaining_time_minutes} دقيقة` :
-                            '-'
-                          }
-                        </TableCell>
-                        <TableCell>
-                          {voucher.remaining_data_gb ?
-                            `${voucher.remaining_data_gb} جيجا` :
-                            '-'
-                          }
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            <Button variant="outline" size="sm">
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            {voucher.status === 'unused' && (
-                              <>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => openSellDialog(voucher.id)}
-                                  className="text-green-600 hover:text-green-700"
-                                >
-                                  <DollarSign className="h-4 w-4" />
-                                </Button>
-                                <Button variant="outline" size="sm">
-                                  <RefreshCw className="h-4 w-4" />
-                                </Button>
-                              </>
-                            )}
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-destructive"
-                              onClick={() => openDeleteDialog(voucher.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
+  {vouchers?.map((voucher) => (
+    <TableRow key={voucher.id}>
+      <TableCell>
+        <input
+          type="checkbox"
+          checked={selectedVouchersForPrint.has(voucher.id)}
+          onChange={() => toggleVoucherSelection(voucher.id)}
+        />
+      </TableCell>
+      <TableCell className="font-mono font-medium">
+        {voucher.code}
+      </TableCell>
+      <TableCell>
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={voucher.status === 'suspended'}
+            onChange={() => {
+              if (voucher.status === 'unused' || voucher.status === 'suspended') {
+                handleStatusToggle(voucher.id, voucher.status);
+              }
+            }}
+            disabled={updateVoucherStatusMutation.isPending || (voucher.status !== 'unused' && voucher.status !== 'suspended')}
+            className="ml-2"
+          />
+          {getStatusBadge(voucher.status)}
+        </div>
+      </TableCell>
+      <TableCell>
+        {packages?.find(p => p.id === voucher.package_id)?.name || 'باقة'}
+      </TableCell>
+      <TableCell>
+        {new Date(voucher.created_at).toLocaleDateString('ar-EG')}
+      </TableCell>
+      <TableCell>
+        {voucher.used_at ?
+          new Date(voucher.used_at).toLocaleDateString('ar-EG') :
+          '-'
+        }
+      </TableCell>
+      <TableCell>
+        {voucher.used_by || '-'}
+      </TableCell>
+ <TableCell>
+  {voucher.remaining_time_minutes
+    ? formatRemainingTimeFromMinutes(voucher.remaining_time_minutes)
+    : '-'
+  }
+</TableCell>
+
+      <TableCell>
+        {voucher.remaining_data_gb ?
+          `${voucher.remaining_data_gb} جيجا` :
+          '-'
+        }
+      </TableCell>
+      <TableCell>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm">
+            <Eye className="h-4 w-4" />
+          </Button>
+          {voucher.status === 'unused' && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => openSellDialog(voucher.id)}
+                className="text-green-600 hover:text-green-700"
+              >
+                <DollarSign className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="sm">
+                <RefreshCw className="h-4 w-4" />
+              </Button>
+            </>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-destructive"
+            onClick={() => openDeleteDialog(voucher.id)}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      </TableCell>
+    </TableRow>
+  ))}
+</TableBody>
                 </Table>
               </div>
             </CardContent>

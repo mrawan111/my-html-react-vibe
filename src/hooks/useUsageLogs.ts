@@ -38,8 +38,16 @@ export const useUsageLogs = (routerId?: string, activeOnly: boolean = false) => 
   });
 };
 
+export interface ActiveUser {
+  cardNumber: string;
+  macAddress: string;
+  startTime: string;
+  data: string;
+  status: string;
+}
+
 export const useActiveUsers = (routerId?: string) => {
-  return useQuery({
+  return useQuery<ActiveUser[]>({
     queryKey: ["active-users", routerId],
     queryFn: async () => {
       let query = supabase
