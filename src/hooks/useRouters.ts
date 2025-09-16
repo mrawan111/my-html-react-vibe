@@ -123,6 +123,8 @@ export const useUpdateRouter = () => {
   });
 };
 export const useTestRouterConnection = () => {
+  const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: async (router: Router) => {
       if (!router.ip_address || !router.api_username || !router.api_password) {
@@ -138,7 +140,7 @@ export const useTestRouterConnection = () => {
 
       const api = new MikroTikAPI(connection);
       const isConnected = await api.testConnection();
-      
+
       if (!isConnected) {
         throw new Error("فشل في الاتصال بالراوتر");
       }
@@ -146,17 +148,18 @@ export const useTestRouterConnection = () => {
       // Update router status to online if connection successful
       const { error } = await supabase
         .from("routers")
-        .update({ 
+        .update({
           status: 'online',
           last_contact: new Date().toISOString()
         })
         .eq("id", router.id);
 
       if (error) throw error;
-      
+
       return { success: true };
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["routers"] });
       toast({
         title: "تم بنجاح",
         description: "تم الاتصال بالراوتر بنجاح",
@@ -166,6 +169,36 @@ export const useTestRouterConnection = () => {
       toast({
         title: "خطأ في الاتصال",
         description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+export const useDeleteRouter = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("routers")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+      return id;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["routers"] });
+      toast({
+        title: "تم بنجاح",
+        description: "تم حذف الراوتر بنجاح",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء حذف الراوتر",
         variant: "destructive",
       });
     },

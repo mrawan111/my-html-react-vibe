@@ -9,17 +9,35 @@ const mikrotikRoutes = require('./routes/mikrotik');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// ✅ Allowed origins (add more if needed)
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:8088',
+  process.env.FRONTEND_URL // optional from .env
+];
+
 // Security middleware
 app.use(helmet());
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-  credentials: true
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV === 'development') {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS blocked for origin: ${origin}`));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+// ✅ Preflight for all routes
+app.options('*', cors());
 
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  max: 100,
   message: 'Too many requests from this IP'
 });
 app.use(limiter);
@@ -38,7 +56,7 @@ app.get('/health', (req, res) => {
 
 // Error handling middleware
 app.use((error, req, res, next) => {
-  console.error('Error:', error);
+  console.error('Error:', error.message);
   res.status(500).json({
     success: false,
     error: 'Internal server error',
@@ -56,5 +74,5 @@ app.use('*', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`🚀 MikroTik Backend API running on port ${PORT}`);
-  console.log(`📡 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
+  console.log(`📡 Allowed origins: ${allowedOrigins.join(', ')}`);
 });

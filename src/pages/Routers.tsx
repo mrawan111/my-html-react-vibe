@@ -3,17 +3,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useRouters, useTestRouterConnection, useUpdateRouter } from "@/hooks/useRouters";
+import { useRouters, useTestRouterConnection, useUpdateRouter, useDeleteRouter } from "@/hooks/useRouters";
 import { ConnectionTestButton } from "@/components/ConnectionTestButton";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
-import { Wifi, WifiOff, Settings, Upload, Image, Plus } from "lucide-react";
+import { Wifi, WifiOff, Settings, Upload, Image, Plus, Trash2 } from "lucide-react";
 
 export default function Routers() {
   const [searchTerm, setSearchTerm] = useState("");
   const { data: routers = [], isLoading, error } = useRouters();
   const testConnection = useTestRouterConnection();
   const updateRouter = useUpdateRouter();
+  const deleteRouter = useDeleteRouter();
 
   const filteredRouters = routers.filter(router =>
     router.cloud_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -166,6 +167,19 @@ export default function Routers() {
                             reader.readAsDataURL(file);
                           }}
                         />
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          className="flex items-center gap-1"
+                          onClick={() => {
+                            if (window.confirm(`هل أنت متأكد من حذف الراوتر "${router.router_name}"؟`)) {
+                              deleteRouter.mutate(router.id);
+                            }
+                          }}
+                        >
+                          <Trash2 size={14} />
+                          حذف
+                        </Button>
                       </div>
                     </td>
                   </tr>
