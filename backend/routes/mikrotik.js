@@ -178,4 +178,43 @@ router.post('/hotspot/users/create', async (req, res) => {
   }
 });
 
+// Create hotspot users in batch
+router.post('/hotspot/users/create-batch', async (req, res) => {
+  try {
+    const schema = connectionSchema.keys({
+      users: Joi.array().items(Joi.object({
+        name: Joi.string().required(),
+        password: Joi.string().optional(),
+        profile: Joi.string().optional(),
+        'limit-uptime': Joi.string().optional(),
+        disabled: Joi.boolean().default(false)
+      })).min(1).max(200).required()
+    });
+
+    const { error, value } = schema.validate(req.body);
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        error: 'Validation error',
+        details: error.details[0].message
+      });
+    }
+
+    const mikrotikService = new MikrotikService(value);
+    const result = await mikrotikService.createHotspotUsersBatch(value.users);
+
+    res.json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    console.error('Create hotspot users batch failed:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to create hotspot users batch',
+      message: error.message
+    });
+  }
+});
+
 module.exports = router;

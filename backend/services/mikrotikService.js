@@ -171,6 +171,38 @@ class MikrotikService {
     }
   }
 
+  async createHotspotUsersBatch(usersArray) {
+    const conn = new RouterOSAPI(this.config);
+
+    try {
+      await conn.connect();
+
+      const results = [];
+      for (const userData of usersArray) {
+        const command = ['/ip/hotspot/user/add'];
+        for (const [key, value] of Object.entries(userData)) {
+          if (value !== undefined && value !== null) {
+            command.push(`=${key}=${value}`);
+          }
+        }
+        const result = await conn.write(command);
+        results.push(result);
+      }
+
+      await conn.close();
+
+      return {
+        success: true,
+        results,
+        count: usersArray.length,
+        timestamp: new Date().toISOString()
+      };
+    } catch (error) {
+      await conn.close().catch(() => {});
+      throw new Error(`Failed to create hotspot users batch: ${error.message}`);
+    }
+  }
+
   async getActiveUsers() {
     const conn = new RouterOSAPI(this.config);
     

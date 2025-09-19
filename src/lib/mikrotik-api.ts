@@ -153,7 +153,7 @@ export class MikroTikAPI {
       });
 
       const result = await response.json();
-      
+
       if (result.success) {
         console.log('✅ Hotspot user created successfully');
         return result.data.result;
@@ -162,6 +162,41 @@ export class MikroTikAPI {
       }
     } catch (error) {
       console.error('Failed to create hotspot user:', error);
+      throw error;
+    }
+  }
+
+  // Create hotspot users in batch via backend API
+  async createHotspotUsersBatch(users: HotspotUser[]): Promise<any> {
+    try {
+      if (users.length > 200) {
+        throw new Error('Maximum 200 users allowed in batch');
+      }
+
+      const response = await fetch(`${this.apiUrl}/hotspot/users/create-batch`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ip: this.connection.ip,
+          port: this.connection.port,
+          username: this.connection.username,
+          password: this.connection.password,
+          users
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        console.log(`✅ ${users.length} hotspot users created successfully in batch`);
+        return result.data;
+      } else {
+        throw new Error(result.message || 'Failed to create hotspot users batch');
+      }
+    } catch (error) {
+      console.error('Failed to create hotspot users batch:', error);
       throw error;
     }
   }
