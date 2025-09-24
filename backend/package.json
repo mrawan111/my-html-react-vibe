@@ -1,4 +1,11 @@
 {
+
+  "build": {
+    "builder": "NIXPACKS",
+    "buildCommand": "npm install",
+    "startCommand": "npm start"
+  },
+
   "name": "mikrotik-backend-api",
   "version": "1.0.0",
   "description": "Backend API for MikroTik router connections",
