@@ -12,6 +12,7 @@ const PORT = process.env.PORT || 3001;
 // ✅ Allowed origins (add more if needed)
 const allowedOrigins = [
   'http://localhost:5173',
+  
   'http://localhost:5000',
   'http://localhost:8088',
   process.env.FRONTEND_URL // optional from .env
