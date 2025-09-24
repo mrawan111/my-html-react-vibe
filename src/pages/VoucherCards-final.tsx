@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Download, Eye, Trash2, RefreshCw, DollarSign, X } from "lucide-react";
+import { Plus, Download, Eye, Trash2, RefreshCw, DollarSign, X, Trash } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
-import { useVouchers, useVoucherPackages, useCreateVouchers, useActivateVoucher, useSellVoucher, useDeleteVoucher, useUpdateVoucherStatus } from "@/hooks/useVouchers";
+import { useVouchers, useVoucherPackages, useCreateVouchers, useActivateVoucher, useSellVoucher, useDeleteVoucher, useUpdateVoucherStatus, useDeleteAllVouchers } from "@/hooks/useVouchers-enhanced";
 import { useRouters } from "@/hooks/useRouters";
 import { useFiles } from "@/hooks/useFiles";
 import { toast } from "@/hooks/use-toast";
@@ -32,16 +32,18 @@ export default function VoucherCards() {
   const [exportDescription, setExportDescription] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationProgress, setGenerationProgress] = useState(0);
+  const [isDeleteAllDialogOpen, setIsDeleteAllDialogOpen] = useState(false);
 
   const { data: routers } = useRouters();
   const { data: packages } = useVoucherPackages();
-  const { data: vouchers, refetch: refetchVouchers } = useVouchers();
+  const { data: vouchers, refetch: refetchVouchers } = useVouchers(selectedRouter || undefined);
   const { addFile } = useFiles();
   const createVouchersMutation = useCreateVouchers();
   const activateVoucherMutation = useActivateVoucher();
   const sellVoucherMutation = useSellVoucher();
   const deleteVoucherMutation = useDeleteVoucher();
   const updateVoucherStatusMutation = useUpdateVoucherStatus();
+  const deleteAllVouchersMutation = useDeleteAllVouchers();
 
   // Helper function to format remaining time
   function formatRemainingTimeFromMinutes(totalMinutes: number): string {
@@ -64,14 +66,16 @@ export default function VoucherCards() {
       unused: "secondary",
       active: "default",
       expired: "destructive",
-      suspended: "outline"
+      suspended: "outline",
+      used: "default"
     } as const;
 
     const labels = {
       unused: "غير مستخدم",
       active: "نشط",
       expired: "منتهي الصلاحية",
-      suspended: "مباع"
+      suspended: "مباع",
+      used: "مستخدم"
     };
 
     return (
@@ -235,10 +239,23 @@ export default function VoucherCards() {
     setIsDeleteDialogOpen(true);
   };
 
+  const handleDeleteAllVouchers = async () => {
+    try {
+      await deleteAllVouchersMutation.mutateAsync(selectedRouter || undefined);
+      setIsDeleteAllDialogOpen(false);
+      setSelectedVouchersForPrint(new Set());
+      refetchVouchers();
+    } catch (error) {
+      console.error("Error deleting all vouchers:", error);
+    }
+  };
+
   const handleStatusToggle = async (voucherId: string, currentStatus: string) => {
-    let newStatus: 'unused' | 'suspended';
+    let newStatus: 'unused' | 'used' | 'suspended';
     if (currentStatus === 'unused') {
-      newStatus = 'suspended';
+      newStatus = 'used';
+    } else if (currentStatus === 'used') {
+      newStatus = 'unused';
     } else if (currentStatus === 'suspended') {
       newStatus = 'unused';
     } else {
@@ -606,47 +623,45 @@ export default function VoucherCards() {
                   <Select value={selectedPackage} onValueChange={setSelectedPackage}>
                     <SelectTrigger>
                       <SelectValue placeholder="اختر الباقة" />
-
                     </SelectTrigger>
                     <SelectContent>
-              {packages
-  ?.filter((pkg) =>
-    [
-      "0695e968-ae70-4a23-a86a-eec7ef07af0e",
-      "5b396187-1dde-48ca-bf99-b72acaa7ec87",
-      "6b7407e5-43d9-4fd1-a286-6534e939abf8",
-      "943e4eed-53c5-48e3-9734-e7fcfcbe253c"
-    ].includes(pkg.id)
-  )
-  .map((pkg) => {
-    // Fix the duration calculation
-    let durationText = '';
-    if (pkg.duration_days) {
-      durationText = `${pkg.duration_days} يوم`;
-    } else if (pkg.duration_hours) {
-      durationText = `${pkg.duration_hours} ساعة`;
-    } else if (pkg.duration_minutes) {
-      durationText = `${pkg.duration_minutes} دقيقة`;
-    } else {
-      durationText = 'غير محدد';
-    }
+                      {packages
+                        ?.filter((pkg) =>
+                          [
+                            "0695e968-ae70-4a23-a86a-eec7ef07af0e",
+                            "5b396187-1dde-48ca-bf99-b72acaa7ec87",
+                            "6b7407e5-43d9-4fd1-a286-6534e939abf8",
+                            "943e4eed-53c5-48e3-9734-e7fcfcbe253c"
+                          ].includes(pkg.id)
+                        )
+                        .map((pkg) => {
+                          let durationText = '';
+                          if (pkg.duration_days) {
+                            durationText = `${pkg.duration_days} يوم`;
+                          } else if (pkg.duration_hours) {
+                            durationText = `${pkg.duration_hours} ساعة`;
+                          } else if (pkg.duration_minutes) {
+                            durationText = `${pkg.duration_minutes} دقيقة`;
+                          } else {
+                            durationText = 'غير محدد';
+                          }
 
-    const dataText = pkg.data_limit_gb
-      ? `${pkg.data_limit_gb} جيجا`
-      : 'غير محدود';
+                          const dataText = pkg.data_limit_gb
+                            ? `${pkg.data_limit_gb} جيجا`
+                            : 'غير محدود';
 
-    return (
-      <SelectItem key={pkg.id} value={pkg.id}>
-        <div className="flex flex-col">
-          <span className="font-medium">{pkg.name}</span>
-          <span className="text-sm text-muted-foreground">
-            {pkg.price} جنيه • {dataText} • {durationText}
-          </span>
-        </div>
-      </SelectItem>
-    );
-  })}
-        </SelectContent>
+                          return (
+                            <SelectItem key={pkg.id} value={pkg.id}>
+                              <div className="flex flex-col">
+                                <span className="font-medium">{pkg.name}</span>
+                                <span className="text-sm text-muted-foreground">
+                                  {pkg.price} جنيه • {dataText} • {durationText}
+                                </span>
+                              </div>
+                            </SelectItem>
+                          );
+                        })}
+                    </SelectContent>
                   </Select>
                   </div>
 
@@ -747,6 +762,15 @@ export default function VoucherCards() {
                   >
                     <Download className="h-4 w-4 ml-2" />
                     تصدير ({selectedVouchersForPrint.size})
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setIsDeleteAllDialogOpen(true)}
+                    disabled={!vouchers || vouchers.length === 0}
+                  >
+                    <Trash className="h-4 w-4 ml-2" />
+                    حذف الكل
                   </Button>
                 </div>
               </div>
@@ -945,7 +969,29 @@ export default function VoucherCards() {
             </div>
           </DialogContent>
         </Dialog>
-      </div>
-    </div>
-  );
-}
+
+        {/* Delete All Dialog */}
+        <Dialog open={isDeleteAllDialogOpen} onOpenChange={setIsDeleteAllDialogOpen}>
+          <DialogContent className="sm:max-w-md" dir="rtl">
+            <DialogHeader>
+              <DialogTitle>حذف جميع القسائم</DialogTitle>
+              <DialogDescription>
+                هل أنت متأكد من حذف جميع القسائم؟ هذا الإجراء لا يمكن التراجع عنه.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="flex gap-2 justify-end">
+              <Button
+                variant="outline"
+                onClick={() => setIsDeleteAllDialogOpen(false)}
+              >
+                إلغاء
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleDeleteAllVouchers}
+                disabled={deleteAllVouchersMutation.isPending}
+              >
+                {deleteAllVouchersMutation.isPending ? (
+                  <>
+                    <RefreshCw className="h-4

@@ -22,7 +22,7 @@ export interface Voucher {
   code: string;
   package_id: string;
   router_id: string;
-  status: 'unused' | 'active' | 'expired' | 'suspended';
+  status: 'unused' | 'active' | 'expired' | 'suspended' | 'used';
   used_by?: string;
   used_at?: string;
   expires_at?: string;
@@ -81,11 +81,11 @@ async function createMikroTikConnection(routerId: string): Promise<MikroTikConne
   };
 }
 
-export const useVouchers = () => {
+export const useVouchers = (routerId?: string) => {
   return useQuery({
-    queryKey: ["vouchers"],
+    queryKey: ["vouchers", routerId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("vouchers")
         .select(`
           *,
@@ -94,6 +94,12 @@ export const useVouchers = () => {
             price
           )
         `);
+
+      if (routerId) {
+        query = query.eq("router_id", routerId);
+      }
+
+      const { data, error } = await query.order("created_at", { ascending: false });
 
       if (error) throw error;
       return data as Voucher[];
@@ -171,12 +177,12 @@ export const useCreateVouchers = () => {
         // Use batch creation for better performance
         await api.createHotspotUsersBatch(hotspotUsers);
 
-        // Insert all voucher records in Supabase
+        // Insert all voucher records in Supabase with 'used' status
         const voucherRecords = voucherCodes.map(code => ({
           code,
           package_id: packageId,
           router_id: routerId,
-          status: 'unused',
+          status: 'used', // Changed from 'unused' to 'used'
           expires_at: null,
           remaining_data_gb: packageData.data_limit_gb || null,
           remaining_time_minutes: (packageData.duration_days || 0) * 24 * 60 || null
@@ -219,14 +225,14 @@ export const useCreateVouchers = () => {
 
           await api.createHotspotUser(hotspotUser);
 
-          // Insert voucher record in Supabase
+          // Insert voucher record in Supabase with 'used' status
           const { data, error } = await supabase
             .from("vouchers")
             .insert([{
               code,
               package_id: packageId,
               router_id: routerId,
-              status: 'unused',
+              status: 'used', // Changed from 'unused' to 'used'
               expires_at: null,
               remaining_data_gb: packageData.data_limit_gb || null,
               remaining_time_minutes: (packageData.duration_days || 0) * 24 * 60 || null
@@ -452,6 +458,42 @@ export const useDeleteVoucher = () => {
   });
 };
 
+export const useDeleteAllVouchers = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (routerId?: string) => {
+      let query = supabase.from("vouchers").delete();
+
+      if (routerId) {
+        query = query.eq("router_id", routerId);
+      }
+
+      const { error } = await query;
+
+      if (error) throw error;
+      return routerId || "all";
+    },
+    onSuccess: (routerId) => {
+      queryClient.invalidateQueries({ queryKey: ["vouchers"] });
+      toast({
+        title: "تم بنجاح",
+        description: routerId === "all"
+          ? "تم حذف جميع القسائم بنجاح"
+          : "تم حذف جميع قسائم الراوتر بنجاح",
+      });
+    },
+    onError: (error: Error) => {
+      console.error("Error deleting vouchers:", error);
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء حذف القسائم",
+        variant: "destructive",
+      });
+    },
+  });
+};
+
 export const useUpdateVoucherStatus = () => {
   const queryClient = useQueryClient();
 
@@ -461,14 +503,14 @@ export const useUpdateVoucherStatus = () => {
       status
     }: {
       voucherId: string;
-      status: 'unused' | 'used' | 'suspended';
+      status: 'unused' | 'used' | 'suspended' | 'active';
     }) => {
       const updateData: any = {
         status,
         updated_at: new Date().toISOString()
       };
 
-      if (status === 'used' || status === 'suspended') {
+      if (status === 'used' || status === 'suspended' || status === 'active') {
         updateData.used_at = new Date().toISOString();
       } else if (status === 'unused') {
         updateData.used_at = null;
