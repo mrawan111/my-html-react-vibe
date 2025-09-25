@@ -29,7 +29,7 @@ export class MikroTikAPI {
   private connection: MikroTikConnection;
   private apiUrl: string;
 
-  constructor(connection: MikroTikConnection, apiUrl: string = 'http://localhost:3001/api/mikrotik') {
+  constructor(connection: MikroTikConnection, apiUrl: string = (import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001/api/mikrotik')) {
     this.connection = connection;
     this.apiUrl = apiUrl;
   }
