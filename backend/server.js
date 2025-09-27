@@ -22,8 +22,8 @@ const allowedOrigins = [
 // Security middleware
 app.use(helmet());
 app.use(cors({
-  origin: allowedOrigins,
-  credentials: true,
+  origin: true,
+    credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
