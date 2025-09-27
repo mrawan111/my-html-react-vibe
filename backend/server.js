@@ -16,25 +16,16 @@ const allowedOrigins = [
   'http://localhost:5000',
   'http://localhost:8088',
   process.env.FRONTEND_URL // optional from .env
-];
+].filter(Boolean); // Remove undefined values
 
 // Security middleware
 app.use(helmet());
 app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV === 'development') {
-      callback(null, true);
-    } else {
-      callback(new Error(`CORS blocked for origin: ${origin}`));
-    }
-  },
+  origin: allowedOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
-
-// ✅ Preflight for all routes
-app.options('*', cors());
 
 // Rate limiting
 const limiter = rateLimit({
