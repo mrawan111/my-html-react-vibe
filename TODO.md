@@ -1,3 +1,5 @@
 - [x] Update CORS configuration in backend/server.js to use array for origin and remove redundant app.options
+- [x] Create package.json for frontend to fix build script
 - [ ] Redeploy backend to Railway to apply CORS fix
+- [ ] Redeploy frontend to Netlify to apply any changes
 - [ ] Test the frontend API call to ensure CORS error is resolved
