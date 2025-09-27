@@ -8,26 +8,44 @@ const mikrotikRoutes = require('./routes/mikrotik');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-
-// ✅ Allowed origins (add more if needed)
+// ✅ Enhanced CORS configuration
 const allowedOrigins = [
   'http://localhost:5173',
   'https://celadon-alfajores-0412e2.netlify.app',
-  'https://celadon-alfajores-0412e2.netlify.app/',
   'http://localhost:5000',
   'http://localhost:8088',
-  process.env.FRONTEND_URL // optional from .env
-].filter(Boolean); // Remove undefined values
+  process.env.FRONTEND_URL
+].filter(Boolean);
 
-// Security middleware
-app.use(helmet());
-app.use(cors({
-  origin: true,
-    credentials: true,
+// Handle preflight requests
+app.options('*', cors({
+  origin: allowedOrigins,
+  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
+// Security middleware
+app.use(helmet());
+
+// Main CORS middleware
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  preflightContinue: false,
+  optionsSuccessStatus: 204
+}));
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
