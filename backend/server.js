@@ -11,6 +11,7 @@ const PORT = process.env.PORT || 3001;
 
 // ✅ Allowed origins (add more if needed)
 const allowedOrigins = [
+  '*',
   'http://localhost:5173',
   'https://celadon-alfajores-0412e2.netlify.app',
   'http://localhost:5000',
