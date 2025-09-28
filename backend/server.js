@@ -197,7 +197,7 @@ app.use('*', (req, res) => {
 });
 
 // ✅ Server startup
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 MikroTik Backend API running on port ${PORT}`);
   console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`📡 Allowed origins: ${allowedOrigins.join(', ')}`);
