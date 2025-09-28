@@ -51,7 +51,7 @@ export default function Dashboard() {
       { name: "نشط", value: statusCounts.active, color: "#4CAF50" },
       { name: "منتهي", value: statusCounts.expired, color: "#ff3366" },
       { name: "غير مستخدم", value: statusCounts.unused, color: "#ff7700" },
-      { name: "مباع", value: statusCounts.suspended, color: "#8884d8" }
+      { name: "مباع", value: statusCounts.suspended, color: "#8884d8" },
     ];
   }, [vouchers]);
 
@@ -67,25 +67,28 @@ export default function Dashboard() {
 
   // Calculate dashboard stats dynamically
   const dashboardStats = useMemo(() => {
-    // Calculate total revenue from vouchers
-    const totalRevenue = vouchers.reduce((sum, voucher) => {
+    // Filter only 'used' vouchers for revenue calculations
+    const usedVouchers = vouchers.filter(v => v.status === 'active'|| v.status === 'unused'|| v.status === 'suspended'|| v.status === 'expired');
+
+    // Calculate total revenue from used vouchers
+    const totalRevenue = usedVouchers.reduce((sum, voucher) => {
       return sum + (voucher.voucher_packages?.price || 0);
     }, 0);
 
-    // Calculate today's sales from vouchers created today
+    // Calculate today's sales from used vouchers created today
     const today = new Date().toDateString();
-    const todaySales = vouchers.filter(v => new Date(v.created_at).toDateString() === today).length;
+    const todaySales = usedVouchers.filter(v => new Date(v.created_at).toDateString() === today).length;
 
     // Active users count
     const activeUsersCount = Users.length;
 
-    // Sold (exported) vouchers count
-    const soldVouchersCount = vouchers.length;
+    // Used vouchers count
+    const usedVouchersCount = usedVouchers.length;
 
-    // Monthly sales: total revenue from vouchers created in the last month
+    // Monthly sales: total revenue from used vouchers created in the last month
     const lastMonth = new Date();
     lastMonth.setMonth(lastMonth.getMonth() - 1);
-    const monthlySales = vouchers
+    const monthlySales = usedVouchers
       .filter(v => new Date(v.created_at) >= lastMonth)
       .reduce((sum, voucher) => sum + (voucher.voucher_packages?.price || 0), 0);
 
@@ -93,7 +96,7 @@ export default function Dashboard() {
       balance: totalRevenue,
       todaySales: todaySales,
       activeUsers: activeUsersCount,
-      soldVouchers: soldVouchersCount,
+      soldVouchers: usedVouchersCount,
       monthlySales: monthlySales,
     };
   }, [vouchers, salesStats]);
@@ -173,7 +176,7 @@ export default function Dashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-muted-foreground text-sm mb-1">إجمالي الكروت المصدرة</div>
-                <div className="text-foreground text-3xl font-semibold">{dashboardStats.soldVouchers.toLocaleString()}</div>
+                <div className="text-foreground text-3xl font-semibold">{dashboardStats.soldVouchers}</div>
                 <div className="text-success text-xs mt-1 flex items-center">
                   <CheckCircle className="h-3 w-3 mr-1" />
                   تم تصديرها

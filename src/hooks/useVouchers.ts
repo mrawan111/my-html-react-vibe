@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -80,23 +81,43 @@ async function createMikroTikConnection(routerId: string): Promise<MikroTikConne
     password: router.api_password as string
   };
 }
-
 export const useVouchers = () => {
   return useQuery({
     queryKey: ["vouchers"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("vouchers")
-        .select(`
-          *,
-          voucher_packages (
-            name,
-            price
-          )
-        `);
+      let allVouchers: Voucher[] = [];
+      let page = 0;
+      const pageSize = 1000; // Supabase max per page
+      let hasMore = true;
 
-      if (error) throw error;
-      return data as Voucher[];
+      while (hasMore) {
+        const from = page * pageSize;
+        const to = from + pageSize - 1;
+
+        const { data, error } = await supabase
+          .from("vouchers")
+          .select(`
+            *,
+            voucher_packages (
+              name,
+              price
+            )
+          `)
+          .order("created_at", { ascending: false })
+          .range(from, to);
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          allVouchers = [...allVouchers, ...data];
+          page++;
+          hasMore = data.length === pageSize;
+        } else {
+          hasMore = false;
+        }
+      }
+
+      return allVouchers;
     },
   });
 };
