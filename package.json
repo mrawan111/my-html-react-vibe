@@ -6,7 +6,9 @@
   "scripts": {
     "build": "vite build",
     "start": "node backend/server.js",
-    "dev": " vite"
+    "dev": " vite",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d build"
   },
   "dependencies": {
     "@fontsource/scheherazade-new": "^5.0.7",
@@ -76,6 +78,7 @@
     "eslint": "^9.32.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
+    "gh-pages": "^6.3.0",
     "globals": "^15.15.0",
     "lovable-tagger": "^1.1.9",
     "postcss": "^8.5.6",
