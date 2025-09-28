@@ -8,8 +8,7 @@ export default defineConfig(() => ({
     host: "::",
     port: 5000,
   },
-    base: '/my-html-react-vibe/', // <-- ADD THIS LINE
-
+  
   plugins: [
     react(),
   ],
