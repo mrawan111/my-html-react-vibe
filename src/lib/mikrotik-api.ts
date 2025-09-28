@@ -29,7 +29,7 @@ export class MikroTikAPI {
   private connection: MikroTikConnection;
   private apiUrl: string;
 
-  constructor(connection: MikroTikConnection, apiUrl: string = import.meta.env.VITE_BACKEND_URL || '/api/mikrotik') {
+  constructor(connection: MikroTikConnection, apiUrl: string = import.meta.env.VITE_BACKEND_URL || 'https://my-html-react-vibe-production.up.railway.app') {
     this.connection = connection;
     this.apiUrl = apiUrl;
   }
@@ -39,7 +39,7 @@ export class MikroTikAPI {
     try {
       console.log(`Testing connection to ${this.connection.ip}:${this.connection.port} via backend`);
       
-      const response = await fetch(`${this.apiUrl}/connect`, {
+      const response = await fetch(`${this.apiUrl}/api/mikrotik/connect`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

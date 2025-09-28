@@ -15,6 +15,7 @@ const allowedOrigins = [
   'https://celadon-alfajores-0412e2.netlify.app',
   'http://localhost:5000',
   'http://localhost:8088',
+    'https://my-html-react-vibe-production.up.railway.app', // Add this
   'https://my-html-react-vibe.lovable.app',
   process.env.FRONTEND_URL
 ].filter(Boolean);
