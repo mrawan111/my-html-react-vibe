@@ -33,13 +33,12 @@ export class MikroTikAPI {
     this.connection = connection;
     this.apiUrl = apiUrl;
   }
-
   // Test connection to the router via backend API
   async testConnection(): Promise<boolean> {
     try {
       console.log(`Testing connection to ${this.connection.ip}:${this.connection.port} via backend`);
-      
-      const response = await fetch(`${this.apiUrl}/api/mikrotik/connect`, {
+        // ✅ Use the direct /connect endpoint
+      const response = await fetch(`${this.apiUrl}/connect`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -53,6 +52,7 @@ export class MikroTikAPI {
           timeout: 10000
         })
       });
+
 
       const result = await response.json();
       
