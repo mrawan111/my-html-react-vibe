@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { MikroTikAPI, MikroTikConnection, HotspotUser } from "@/lib/mikrotik-api-enhanced";
+import { MikroTikAPI, MikroTikConnection, HotspotUser } from "@/lib/mikrotik-api";
 
 export interface VoucherPackage {
   id: string;
