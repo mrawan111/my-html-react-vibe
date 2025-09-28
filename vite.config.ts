@@ -9,7 +9,7 @@ export default defineConfig(() => ({
     port: 5000,
     proxy: {
       '/api': {
-        target: 'http://localhost:3001',
+        target: 'my-html-react-vibe-production.up.railway.app',
         changeOrigin: true,
       },
     },
