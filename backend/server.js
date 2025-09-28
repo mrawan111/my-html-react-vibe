@@ -117,6 +117,25 @@ app.options('/health', (req, res) => {
   res.status(200).end();
 });
 
+// ✅ Proxy route for /connect to /api/mikrotik/connect (for frontend compatibility)
+app.post('/connect', (req, res) => {
+  // Forward the request to the mikrotik connect endpoint
+  req.url = '/api/mikrotik/connect';
+  app._router.handle(req, res);
+});
+
+// ✅ OPTIONS handler for /connect
+app.options('/connect', (req, res) => {
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.status(200).end();
+});
+
 // ✅ MikroTik routes
 app.use('/api/mikrotik', mikrotikRoutes);
 
