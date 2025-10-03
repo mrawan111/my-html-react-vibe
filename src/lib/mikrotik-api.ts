@@ -37,7 +37,15 @@ export class MikroTikAPI {
   async testConnection(): Promise<boolean> {
     try {
       console.log(`Testing connection to ${this.connection.ip}:${this.connection.port} via backend`);
-        // ✅ Use the direct /connect endpoint
+
+      // Check if backend is remote and IP is local
+      const isLocalIP = this.connection.ip.startsWith('192.168.') || this.connection.ip.startsWith('10.') || this.connection.ip.startsWith('172.');
+      const isRemoteBackend = this.apiUrl && !this.apiUrl.includes('localhost') && !this.apiUrl.includes('127.0.0.1');
+
+      if (isLocalIP && isRemoteBackend) {
+        console.warn('⚠️ Attempting to connect to local IP from remote backend. This may fail.');
+      }
+
       const response = await fetch(`${this.apiUrl}/connect`, {
         method: 'POST',
         headers: {
@@ -53,9 +61,20 @@ export class MikroTikAPI {
         })
       });
 
+      // Check if response is JSON
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        console.error('Backend returned non-JSON response:', contentType);
+        throw new Error('Backend returned invalid response format. Check backend deployment.');
+      }
+
+      if (!response.ok) {
+        console.error('Backend response not OK:', response.status, response.statusText);
+        throw new Error(`Backend error: ${response.status} ${response.statusText}`);
+      }
 
       const result = await response.json();
-      
+
       if (result.success) {
         console.log('✅ Connection successful via backend API');
         return true;
@@ -65,7 +84,17 @@ export class MikroTikAPI {
       }
     } catch (error) {
       console.error('Backend API connection test failed:', error);
-      return false;
+
+      // Provide more specific error messages
+      if (error.message.includes('Backend returned invalid response format')) {
+        throw new Error('فشل في الاتصال بالخادم. تحقق من نشر الخادم.');
+      } else if (error.message.includes('Backend error')) {
+        throw new Error('خطأ في الخادم. تحقق من سجلات الخادم.');
+      } else if (error.message.includes('fetch')) {
+        throw new Error('فشل في الاتصال بالخادم. تحقق من عنوان URL للخادم.');
+      } else {
+        throw new Error(error.message || 'فشل في اختبار الاتصال');
+      }
     }
   }
 

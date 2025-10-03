@@ -33,7 +33,7 @@ export const RouterTestForm = () => {
     try {
       const api = new MikroTikAPI(connection);
       const isConnected = await api.testConnection();
-      
+
       if (isConnected) {
         setTestResult('success');
         toast({
@@ -47,7 +47,7 @@ export const RouterTestForm = () => {
           console.log("System Info:", systemInfo);
           toast({
             title: "معلومات النظام",
-            description: `Router: ${systemInfo.identity || 'Unknown'} - Version: ${systemInfo.version || 'Unknown'}`,
+            description: `Router: ${systemInfo.identity?.name || 'Unknown'} - Version: ${systemInfo.resource?.version || 'Unknown'}`,
           });
         } catch (error) {
           console.log("Could not get system info, but connection was successful");
