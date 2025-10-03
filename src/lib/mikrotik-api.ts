@@ -29,7 +29,7 @@ export class MikroTikAPI {
   private connection: MikroTikConnection;
   private apiUrl: string;
 
-  constructor(connection: MikroTikConnection, apiUrl: string = import.meta.env.VITE_BACKEND_URL ||"http://localhost:3100") {
+  constructor(connection: MikroTikConnection, apiUrl: string = "https://my-html-react-vibe-production.up.railway.app") {
     this.connection = connection;
     this.apiUrl = apiUrl;
   }
