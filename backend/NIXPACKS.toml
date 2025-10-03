@@ -2,10 +2,13 @@
 nixPkgs = ["nodejs_18"]
 
 [phases.install]
-cmds = ["cd backend && npm install"]
+# Use npm ci for clean, reproducible installs
+cmds = ["cd backend && npm ci"]
 
 [phases.build]
+# Express doesn't need a build step
 cmds = []
 
 [start]
+# Start your Express server
 cmd = "cd backend && npm start"
