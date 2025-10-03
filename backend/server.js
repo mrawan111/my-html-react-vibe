@@ -9,7 +9,7 @@ const mikrotikRoutes = require('./routes/mikrotik');
 const app = express();
 
 // ✅ Railway uses PORT environment variable, default to 8080
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 3001;
 
 // ✅ Allowed origins - UPDATED for production
 const allowedOrigins = [
