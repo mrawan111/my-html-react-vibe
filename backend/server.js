@@ -87,17 +87,23 @@ app.get('/health', (req, res) => {
 
 // ✅ ADD THIS: Direct /connect route for frontend compatibility
 app.post('/connect', async (req, res) => {
+  // Add CORS headers for Railway deployment
+  res.header('Access-Control-Allow-Origin', 'https://my-html-react-vibe.lovable.app');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.header('Access-Control-Allow-Credentials', 'true');
+
   try {
     // Forward to the actual mikrotik connect endpoint
     const { ip, port, username, password, connectionType, timeout } = req.body;
-    
+
     const MikrotikService = require('./services/mikrotikService');
     const mikrotikService = new MikrotikService({
       ip, port, username, password, connectionType, timeout
     });
-    
+
     const result = await mikrotikService.testConnection();
-    
+
     res.json({
       success: true,
       data: result
@@ -114,6 +120,10 @@ app.post('/connect', async (req, res) => {
 
 // ✅ ADD OPTIONS handler for /connect
 app.options('/connect', (req, res) => {
+  res.header('Access-Control-Allow-Origin', 'https://my-html-react-vibe.lovable.app');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.header('Access-Control-Allow-Credentials', 'true');
   res.status(200).end();
 });
 
