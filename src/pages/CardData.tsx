@@ -36,7 +36,7 @@ export default function CardData() {
   const printRef = useRef<HTMLDivElement>(null);
 
   const { data: routers = [] } = useRouters();
-  const { data: vouchers = [], refetch: refetchVouchers } = useVouchers(selectedRouter);
+  const { data: vouchers = [], refetch: refetchVouchers } = useVouchers();
   const { data: packages = [] } = useVoucherPackages();
 
   // Calculate real chart data from vouchers

@@ -109,7 +109,7 @@ export const useVouchers = () => {
         if (error) throw error;
 
         if (data && data.length > 0) {
-          allVouchers = [...allVouchers, ...data];
+          allVouchers = [...allVouchers, ...data as Voucher[]];
           page++;
           hasMore = data.length === pageSize;
         } else {
@@ -117,7 +117,7 @@ export const useVouchers = () => {
         }
       }
 
-      return allVouchers;
+      return allVouchers as Voucher[];
     },
   });
 };
