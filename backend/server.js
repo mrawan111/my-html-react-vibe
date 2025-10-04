@@ -16,6 +16,7 @@ const allowedOrigins = [
   'http://localhost:5000',
   'http://localhost:8088',
   'https://my-html-react-vibe.lovable.app',
+  'https://my-html-react-vibe.vercel.app',
   process.env.FRONTEND_URL
 ].filter(Boolean);
 

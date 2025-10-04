@@ -29,7 +29,7 @@ export class MikroTikAPI {
   private connection: MikroTikConnection;
   private apiUrl: string;
 
-  constructor(connection: MikroTikConnection, apiUrl: string = "https://my-html-react-vibe-production.up.railway.app") {
+  constructor(connection: MikroTikConnection, apiUrl: string = "https://my-html-react-vibe.vercel.app") {
     this.connection = connection;
     this.apiUrl = apiUrl;
   }
