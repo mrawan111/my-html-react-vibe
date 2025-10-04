@@ -7,6 +7,8 @@ require('dotenv').config();
 const mikrotikRoutes = require('./routes/mikrotik');
 
 const app = express();
+// Trust proxy for correct client IP parsing behind Vercel/Proxies
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3001;
 
 // ✅ Allowed origins
@@ -197,14 +199,16 @@ app.use('*', (req, res) => {
   });
 });
 
-// ✅ Server startup
-app.listen(PORT, () => {
-  console.log(`🚀 MikroTik Backend API running on port ${PORT}`);
-  console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`📡 Allowed origins: ${allowedOrigins.join(', ')}`);
-  console.log(`🔗 Health check: http://localhost:${PORT}/health`);
-  console.log(`🧪 CORS test: http://localhost:${PORT}/api/test-cors`);
-});
+// ✅ Server startup (only when run directly, not in serverless)
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`🚀 MikroTik Backend API running on port ${PORT}`);
+    console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`📡 Allowed origins: ${allowedOrigins.join(', ')}`);
+    console.log(`🔗 Health check: http://localhost:${PORT}/health`);
+    console.log(`🧪 CORS test: http://localhost:${PORT}/api/test-cors`);
+  });
+}
 
 // ✅ Graceful shutdown
 process.on('SIGINT', () => {
