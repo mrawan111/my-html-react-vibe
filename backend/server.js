@@ -121,10 +121,10 @@ app.options('/health', (req, res) => {
 });
 
 // ✅ MikroTik routes
-app.use('/api/mikrotik', mikrotikRoutes);
+app.use('/api', mikrotikRoutes);
 
 // ✅ Special OPTIONS handler for all mikrotik routes
-app.options('/api/mikrotik/*', (req, res) => {
+app.options('/api/*', (req, res) => {
   const origin = req.headers.origin;
   if (allowedOrigins.includes(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);

@@ -1,5 +1,8 @@
 # TODO: Fix CORS and Backend Access for Deployed Frontend
 
+## Completed Tasks:
+- [x] Updated all API endpoints in src/lib/mikrotik-api.ts from /api/mikrotik/... to /api/...
+
 ## Steps to Complete:
 - [ ] Restart the backend server to apply latest CORS configuration
 - [ ] Install ngrok for exposing local backend publicly

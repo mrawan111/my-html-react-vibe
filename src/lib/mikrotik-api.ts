@@ -46,7 +46,7 @@ export class MikroTikAPI {
         console.warn('⚠️ Attempting to connect to local IP from remote backend. This may fail.');
       }
 
-      const response = await fetch(`${this.apiUrl}/api/mikrotik/connect`, {
+      const response = await fetch(`${this.apiUrl}/api/connect`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -101,7 +101,7 @@ export class MikroTikAPI {
   // Execute custom command via backend API
   async executeCommand(command: string, params: any = {}): Promise<any> {
     try {
-      const response = await fetch(`${this.apiUrl}/api/mikrotik/command`, {
+      const response = await fetch(`${this.apiUrl}/api/command`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -117,7 +117,7 @@ export class MikroTikAPI {
       });
 
       const result = await response.json();
-      
+
       if (result.success) {
         return result.data.result;
       } else {
@@ -132,7 +132,7 @@ export class MikroTikAPI {
   // Get router system information via backend API
   async getSystemInfo(): Promise<any> {
     try {
-      const response = await fetch(`${this.apiUrl}/api/mikrotik/identity`, {
+      const response = await fetch(`${this.apiUrl}/api/identity`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -146,7 +146,7 @@ export class MikroTikAPI {
       });
 
       const result = await response.json();
-      
+
       if (result.success) {
         console.log('✅ System info fetched via backend API');
         return result.data;
@@ -167,7 +167,7 @@ export class MikroTikAPI {
   // Create hotspot user (voucher) via backend API
   async createHotspotUser(user: HotspotUser): Promise<string> {
     try {
-      const response = await fetch(`${this.apiUrl}/api/mikrotik/hotspot/users/create`, {
+      const response = await fetch(`${this.apiUrl}/api/hotspot/users/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -202,7 +202,7 @@ export class MikroTikAPI {
         throw new Error('Maximum 200 users allowed in batch');
       }
 
-      const response = await fetch(`${this.apiUrl}/api/mikrotik/hotspot/users/create-batch`, {
+      const response = await fetch(`${this.apiUrl}/api/hotspot/users/create-batch`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -233,7 +233,7 @@ export class MikroTikAPI {
   // Get active hotspot users via backend API
   async getActiveUsers(): Promise<HotspotActiveUser[]> {
     try {
-      const response = await fetch(`${this.apiUrl}/api/mikrotik/command`, {
+      const response = await fetch(`${this.apiUrl}/api/command`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -263,7 +263,7 @@ export class MikroTikAPI {
   // Remove hotspot user via backend API
   async removeHotspotUser(userId: string): Promise<boolean> {
     try {
-      const response = await fetch(`${this.apiUrl}/api/mikrotik/command`, {
+      const response = await fetch(`${this.apiUrl}/api/command`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -289,7 +289,7 @@ export class MikroTikAPI {
   // Get hotspot users via backend API
   async getHotspotUsers(): Promise<HotspotUser[]> {
     try {
-      const response = await fetch(`${this.apiUrl}/api/mikrotik/hotspot/users`, {
+      const response = await fetch(`${this.apiUrl}/api/hotspot/users`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -318,7 +318,7 @@ export class MikroTikAPI {
   // Update hotspot user via backend API
   async updateHotspotUser(userId: string, updates: Partial<HotspotUser>): Promise<boolean> {
     try {
-      const response = await fetch(`${this.apiUrl}/api/mikrotik/command`, {
+      const response = await fetch(`${this.apiUrl}/api/command`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -347,7 +347,7 @@ export class MikroTikAPI {
       const command = enabled ? '/ip/hotspot/add' : '/ip/hotspot/remove';
       const params = enabled ? { interface: interfaceName } : { numbers: interfaceName };
 
-      const response = await fetch(`${this.apiUrl}/api/mikrotik/command`, {
+      const response = await fetch(`${this.apiUrl}/api/command`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
