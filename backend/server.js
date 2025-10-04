@@ -1,10 +1,9 @@
 const express = require('express');
 const cors = require('cors');
-// require('dotenv').config(); // Railway sets env vars automatically
 
 const app = express();
 
-// ✅ Railway uses PORT environment variable, default to 8080
+// Port for local development only - Vercel uses serverless
 const PORT = process.env.PORT || 3001;
 
 console.log('🚀 Starting MikroTik Backend API...');
@@ -65,11 +64,17 @@ app.options('/connect', (req, res) => {
   res.status(200).end();
 });
 
-// ✅ Server startup
-app.listen(PORT, () => {
-  console.log(`🚀 MikroTik Backend API running on port ${PORT}`);
-  console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🔗 Health check: https://my-html-react-vibe-production.up.railway.app/health`);
-});
+// Load MikroTik routes
+const mikrotikRoutes = require('./routes/mikrotik');
+app.use('/api/mikrotik', mikrotikRoutes);
 
+// Server startup (only for local development)
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    console.log(`🚀 MikroTik Backend API running on port ${PORT}`);
+    console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
+  });
+}
+
+// Export for Vercel serverless
 module.exports = app;
