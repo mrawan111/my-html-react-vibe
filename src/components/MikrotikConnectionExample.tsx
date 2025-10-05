@@ -19,8 +19,8 @@ export function MikrotikConnectionExample() {
   const handleTest = async () => {
     setLoading(true);
     try {
-      // Create API instance with backend URL
-      const api = new MikroTikAPI(connection, 'http://localhost:3001/api/mikrotik');
+      // Create API instance with backend URL (points to backend root; class adds /api/*)
+      const api = new MikroTikAPI(connection, 'http://localhost:3001');
       
       // Test connection
       const isConnected = await api.testConnection();
